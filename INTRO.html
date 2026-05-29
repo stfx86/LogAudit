@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wazuh SIEM — CVE-2022-30333 Attack Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#020b10; --panel:#040f18; --border:#0d3a4a;
+    --cyan:#00d4ff; --red:#ff3c5a; --yellow:#ffd700;
+    --text:#b0cdd8; --dim:#4a6a7a;
+    --mono:'Share Tech Mono',monospace;
+    --display:'Orbitron',sans-serif;
+    --body:'Rajdhani',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);height:100vh;width:100vw;overflow:hidden;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);pointer-events:none;z-index:9999;}
+
+  .slide{position:absolute;inset:0;display:none;opacity:0;transition:opacity 0.4s;flex-direction:column;}
+  .slide.active{display:flex;}
+  .slide.visible{opacity:1;}
+
+  /* ── TOPBAR — hidden for presentation ── */
+  .topbar{display:none;}
+
+  /* ── STEPBAR ── */
+  .stepbar{display:flex;align-items:center;gap:22px;padding:14px 40px;border-bottom:2px solid var(--border);background:rgba(0,212,255,0.03);flex-shrink:0;}
+  .step-num{font-family:var(--display);font-size:14px;color:var(--dim);letter-spacing:3px;}
+  .step-name{font-family:var(--display);font-size:22px;color:var(--cyan);letter-spacing:1px;flex:1;}
+  .step-time{font-family:var(--mono);font-size:18px;color:var(--yellow);}
+  .step-mitre{font-family:var(--mono);font-size:15px;color:#00e68a;border:1px solid rgba(0,230,138,0.3);padding:5px 14px;border-radius:2px;}
+
+  /* ── PANELS ── */
+  .content{flex:1;display:flex;gap:0;overflow:hidden;}
+  .panel{display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--panel);overflow:hidden;}
+  .panel:last-child{border-right:none;}
+  .panel-header{display:flex;align-items:center;gap:10px;padding:14px 24px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.3);flex-shrink:0;}
+  .ph-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+  .ph-title{font-family:var(--display);font-size:15px;letter-spacing:2px;flex:1;}
+  .ph-badge{font-family:var(--mono);font-size:14px;padding:5px 14px;border-radius:2px;letter-spacing:1px;}
+  .badge-crit{background:rgba(255,60,90,0.12);color:var(--red);border:1px solid rgba(255,60,90,0.3);}
+  .badge-warn{background:rgba(255,215,0,0.08);color:var(--yellow);border:1px solid rgba(255,215,0,0.25);}
+
+  /* ── LOG CARDS ── */
+  .img-body{flex:1;display:flex;flex-direction:column;padding:20px;overflow-y:auto;gap:16px;}
+  .ss-card{border:1px solid var(--border);border-radius:3px;overflow:hidden;background:#010a12;opacity:0;transform:translateY(14px);transition:opacity 0.5s,transform 0.5s;}
+  .ss-card.shown{opacity:1;transform:translateY(0);}
+  .ss-label{padding:10px 18px;background:rgba(0,0,0,0.5);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:15px;color:var(--dim);display:flex;justify-content:space-between;align-items:center;}
+  .ss-label span{color:var(--cyan);} .ss-label .rule{color:var(--yellow);}
+  .ss-img{width:100%;display:block;}
+  .ss-annotation{padding:12px 18px;background:rgba(255,60,90,0.03);border-top:1px solid rgba(255,60,90,0.12);font-family:var(--mono);font-size:16px;color:var(--text);line-height:1.7;}
+  .ss-annotation .key{color:var(--yellow);} .ss-annotation .val{color:var(--red);}
+  .ss-annotation .ok{color:#00e68a;} .ss-annotation .note{color:var(--cyan);}
+
+  /* ── ANALYSIS PANEL ── */
+  .analysis-panel{width:380px;flex-shrink:0;display:flex;flex-direction:column;background:#020c14;}
+  .ap-header{padding:14px 22px;border-bottom:1px solid var(--border);font-family:var(--display);font-size:14px;color:var(--cyan);letter-spacing:2px;flex-shrink:0;}
+  .ap-body{flex:1;padding:18px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;}
+  .fact-card{border-left:3px solid;padding:14px 16px;background:rgba(0,0,0,0.25);opacity:0;transform:translateX(16px);transition:opacity 0.45s,transform 0.45s;border-radius:0 3px 3px 0;}
+  .fact-card.shown{opacity:1;transform:translateX(0);}
+  .fact-card.crit{border-color:var(--red);background:rgba(255,60,90,0.04);}
+  .fact-card.warn{border-color:var(--yellow);background:rgba(255,215,0,0.03);}
+  .fact-card.info{border-color:var(--cyan);background:rgba(0,212,255,0.03);}
+  .fact-card.ok{border-color:#00e68a;background:rgba(0,230,138,0.03);}
+  .fc-label{font-family:var(--mono);font-size:13px;letter-spacing:2px;color:var(--dim);margin-bottom:8px;text-transform:uppercase;}
+  .fc-text{font-family:var(--mono);font-size:16px;color:var(--text);line-height:1.65;}
+  .fc-text .hi{color:var(--yellow);} .fc-text .hiR{color:var(--red);}
+  .fc-text .hiG{color:#00e68a;} .fc-text .hiC{color:var(--cyan);}
+  .mitre-box{margin-top:auto;border:1px solid rgba(0,230,138,0.2);background:rgba(0,230,138,0.03);padding:14px;border-radius:3px;opacity:0;transition:opacity 0.5s;}
+  .mitre-box.shown{opacity:1;}
+  .mitre-title{font-family:var(--display);font-size:13px;color:#00e68a;letter-spacing:2px;margin-bottom:10px;}
+  .mitre-row{font-family:var(--mono);font-size:15px;color:var(--text);display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(13,58,74,0.4);}
+  .mitre-row:last-child{border:none;} .mitre-row b{color:#00e68a;font-weight:normal;}
+
+  /* ── NAVIGATION ── */
+  .slide-nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:200;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--dim);cursor:pointer;transition:all 0.3s;}
+  .dot.active{background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+  .nav-hint{position:fixed;bottom:16px;right:28px;font-family:var(--mono);font-size:11px;color:var(--dim);z-index:200;letter-spacing:1px;}
+  .slide-counter{position:fixed;bottom:16px;left:28px;font-family:var(--mono);font-size:11px;color:var(--dim);z-index:200;letter-spacing:1px;}
+
+  /* ══════════════════════════════════════════
+     SLIDE 0 — TITLE PAGE
+  ══════════════════════════════════════════ */
+  .title-slide-body{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:48px;position:relative;
+    background:radial-gradient(ellipse at 50% 30%, rgba(0,212,255,0.05) 0%, transparent 65%);
+  }
+  .title-univ{font-family:var(--mono);font-size:18px;color:var(--dim);letter-spacing:4px;text-transform:uppercase;margin-bottom:4px;}
+  .title-faculty{font-family:var(--mono);font-size:16px;color:var(--dim);letter-spacing:3px;margin-bottom:36px;}
+  .title-logo-row{display:flex;align-items:center;gap:20px;margin-bottom:36px;}
+  .title-citech-label{text-align:left;}
+  .title-citech-label .master{font-family:var(--display);font-size:24px;color:var(--cyan);letter-spacing:3px;}
+  .title-citech-label .prog{font-family:var(--mono);font-size:16px;color:var(--dim);margin-top:4px;letter-spacing:1px;}
+  .title-sep{width:1px;height:60px;background:var(--border);}
+  .title-h1{font-family:var(--display);font-size:52px;color:var(--cyan);text-align:center;line-height:1.2;letter-spacing:2px;margin-bottom:16px;text-shadow:0 0 40px rgba(0,212,255,0.3);}
+  .title-h2{font-family:var(--display);font-size:24px;color:var(--yellow);text-align:center;letter-spacing:1px;margin-bottom:44px;}
+  .title-divider{display:flex;align-items:center;gap:16px;width:100%;max-width:700px;margin-bottom:40px;}
+  .title-divider-line{flex:1;height:1px;background:var(--border);}
+  .title-divider-icon{font-family:var(--mono);font-size:15px;color:var(--dim);letter-spacing:2px;white-space:nowrap;}
+  .title-names{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:32px;}
+  .title-name{font-family:var(--body);font-size:28px;font-weight:700;color:var(--text);letter-spacing:3px;}
+  .title-year{font-family:var(--mono);font-size:16px;color:var(--dim);letter-spacing:3px;}
+
+  /* ══════════════════════════════════════════
+     SLIDE 1 — INTRODUCTION & CONTEXT
+  ══════════════════════════════════════════ */
+  .intro-slide-body{
+    flex:1;display:flex;flex-direction:column;padding:52px 80px;overflow:hidden;
+  }
+  .section-title{font-family:var(--display);font-size:42px;color:var(--cyan);letter-spacing:2px;margin-bottom:10px;}
+  .section-underline{width:80px;height:4px;background:var(--cyan);border-radius:2px;margin-bottom:40px;}
+  .blank-area{
+    flex:1;border:1px dashed rgba(0,212,255,0.15);border-radius:4px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,212,255,0.01);
+  }
+  .blank-label{font-family:var(--mono);font-size:20px;color:var(--dim);letter-spacing:2px;}
+
+  /* ══════════════════════════════════════════
+     SLIDE 2 — JAMAL
+  ══════════════════════════════════════════ */
+  .jamal-layout{flex:1;display:flex;overflow:hidden;}
+  .jamal-profile{
+    width:440px;flex-shrink:0;padding:36px 32px;
+    border-right:1px solid var(--border);
+    display:flex;flex-direction:column;gap:24px;
+    background:rgba(255,60,90,0.02);
+  }
+  .jamal-avatar{
+    width:110px;height:110px;border-radius:4px;
+    background:rgba(255,60,90,0.08);border:2px solid rgba(255,60,90,0.4);
+    display:flex;align-items:center;justify-content:center;font-size:56px;
+    margin-bottom:4px;
+  }
+  .jamal-name{font-family:var(--display);font-size:38px;color:var(--red);letter-spacing:3px;}
+  .jamal-role{font-family:var(--mono);font-size:17px;color:var(--dim);margin-top:6px;}
+  .jamal-tags{display:flex;flex-wrap:wrap;gap:8px;}
+  .jtag{font-family:var(--mono);font-size:14px;padding:5px 13px;border-radius:2px;
+         background:rgba(255,60,90,0.08);border:1px solid rgba(255,60,90,0.25);color:var(--red);}
+  .jamal-text{font-family:var(--body);font-size:22px;color:var(--text);line-height:1.72;}
+  .jamal-text-sub{font-family:var(--body);font-size:19px;color:var(--dim);line-height:1.65;}
+
+  /* Terminal */
+  .jamal-terminal{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+  .term-bar{
+    padding:12px 22px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.5);
+    font-family:var(--mono);font-size:15px;color:var(--dim);letter-spacing:2px;
+    display:flex;align-items:center;gap:10px;flex-shrink:0;
+  }
+  .term-dot{width:13px;height:13px;border-radius:50%;}
+  .term-body{
+    flex:1;padding:40px 40px;overflow-y:auto;
+    font-family:var(--mono);font-size:22px;line-height:2;
+    background:#010a12;
+    display:flex;align-items:center;
+  }
+  .tp{color:#ff6b8a;}
+  .tc{color:#e8f4f8;}
+  .cursor{display:inline-block;width:12px;height:22px;background:var(--cyan);
+           animation:blink 1.1s step-end infinite;vertical-align:text-bottom;}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 0 — TITLE PAGE
+════════════════════════════════════════════ -->
+<div class="slide" id="slide-0">
+  <div class="title-slide-body">
+
+    <div class="title-univ">University Mohammed V</div>
+    <div class="title-faculty">Faculty of Science</div>
+
+    <div class="title-logo-row">
+      <!-- CITEch Logo -->
+      <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="32,3 61,19 61,45 32,61 3,45 3,19"
+                 fill="none" stroke="#00d4ff" stroke-width="2"/>
+        <polygon points="32,14 52,25.5 52,38.5 32,50 12,38.5 12,25.5"
+                 fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.35"/>
+        <line x1="32" y1="3" x2="32" y2="61" stroke="#00d4ff" stroke-width="0.5" opacity="0.15"/>
+        <line x1="3" y1="19" x2="61" y2="45" stroke="#00d4ff" stroke-width="0.5" opacity="0.15"/>
+        <line x1="61" y1="19" x2="3" y2="45" stroke="#00d4ff" stroke-width="0.5" opacity="0.15"/>
+        <text x="32" y="34" font-family="Orbitron,sans-serif" font-size="10"
+              fill="#00d4ff" text-anchor="middle" font-weight="700" letter-spacing="1">CITEch</text>
+      </svg>
+      <div class="title-sep"></div>
+      <div class="title-citech-label">
+        <div class="master">MASTER CITEch</div>
+        <div class="prog">Cybersecurity &amp; Information Technology</div>
+      </div>
+    </div>
+
+    <div class="title-h1">WAZUH SIEM<br/>Intrusion Detection &amp; Log Analysis</div>
+    <div class="title-h2">CVE-2022-30333 — UnRAR Path Traversal Attack Case Study</div>
+
+    <div class="title-divider">
+      <div class="title-divider-line"></div>
+      <div class="title-divider-icon">PRESENTED BY</div>
+      <div class="title-divider-line"></div>
+    </div>
+
+    <div class="title-names">
+      <div class="title-name">ABDELKHALEK EL IDRISSI</div>
+      <div class="title-name">EL MOSTAFA BENNASSER</div>
+      <div class="title-name">ANAS TARYOUS</div>
+    </div>
+
+    <div class="title-year">ACADEMIC YEAR 2024 – 2025</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     SLIDE 1 — INTRODUCTION & CONTEXT
+════════════════════════════════════════════ -->
+<div class="slide" id="slide-1">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span>
+      <span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>MASTER <b>CITEch</b></span>
+      <span>UNIVERSITY <b>Mohammed V</b></span>
+    </div>
+  </div>
+  <div class="intro-slide-body">
+    <div class="section-title">Introduction &amp; Context</div>
+    <div class="section-underline"></div>
+    <div class="blank-area">
+      <div class="blank-label">[ Content to be added ]</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     SLIDE 2 — MEET JAMAL (THE ATTACKER)
+════════════════════════════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span>
+      <span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>THREAT ACTOR <b style="color:var(--red)">IDENTIFIED</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">PROLOGUE</span>
+    <span class="step-name">The Attacker — Introducing Jamal</span>
+  </div>
+  <div class="jamal-layout">
+
+    <!-- Left: Profile -->
+    <div class="jamal-profile">
+      <div>
+        <div class="jamal-avatar">🕵️</div>
+        <div class="jamal-name">JAMAL</div>
+        <div class="jamal-role">// threat_actor :: external_attacker</div>
+      </div>
+      <div class="jamal-tags">
+        <span class="jtag">APT SIMULATION</span>
+        <span class="jtag">ACTIVE THREAT</span>
+        <span class="jtag">ROOT ESCALATION</span>
+      </div>
+      <div class="jamal-text">
+        Jamal is the attacker in our scenario. Throughout this presentation,
+        he will demonstrate each step of the intrusion — live at his terminal —
+        so the audience can understand exactly what a real attacker does.
+      </div>
+      <div class="jamal-text-sub">
+        Every command Jamal executes will be shown alongside the logs captured
+        by Wazuh SIEM — bridging the attacker's perspective with the
+        defender's detection view.
+      </div>
+    </div>
+
+    <!-- Right: Terminal -->
+    <div class="jamal-terminal">
+      <div class="term-bar">
+        <div class="term-dot" style="background:#ff3c5a"></div>
+        <div class="term-dot" style="background:#ffd700"></div>
+        <div class="term-dot" style="background:#00e68a"></div>
+        <span style="margin-left:10px">JAMAL@kali-linux — ATTACKER MACHINE</span>
+      </div>
+      <div class="term-body">
+        <div><span class="tp">jamal@kali:~# </span><span class="tc">echo "hello drari i'm Jamal, and today i will play the role of the attacker haha (for learning purpose only 😅)"</span><span class="cursor"></span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     SLIDE 3 — UNRAR LOG (log only, no description)
+════════════════════════════════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span>
+      <span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=239</b></span>
+      <span>TIME <b>21:37:13</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 1–2</span>
+    <span class="step-name">Malicious Execution — UnRAR Path Traversal</span>
+    <span class="step-time">21:37:13.129</span>
+    <span class="step-mitre">T1190 · CVE-2022-30333</span>
+  </div>
+  <div class="content">
+    <div class="panel" style="flex:1;">
+      <div class="panel-header">
+        <div class="ph-dot" style="background:var(--red);box-shadow:0 0 8px var(--red)"></div>
+        <span class="ph-title" style="color:var(--red)">Auditd Logs — Wazuh Dashboard</span>
+        <span class="ph-badge badge-crit">CRITICAL · RULE 100001</span>
+      </div>
+      <div class="img-body">
+        <div class="ss-card" id="sc0">
+          <div class="ss-label">
+            <span>Auditd: Command execution — /usr/local/bin/unrar</span>
+            <span class="rule">Rule #100001</span>
+          </div>
+          <!-- Replace SC0 with your actual image path or base64 src -->
+          <img class="ss-img" src="SC0_PLACEHOLDER" alt="unrar command" />
+          <div class="ss-annotation">
+            <span class="key">Rule level:</span> <span class="val">3</span> &nbsp;·&nbsp;
+            <span class="key">Source:</span> <span class="ok">OSsec</span> &nbsp;·&nbsp;
+            <span class="key">Timestamp:</span> May 8, 2026 @ <span class="val">21:37:13.129</span>
+          </div>
+        </div>
+        <div class="ss-card" id="sc1">
+          <div class="ss-label">
+            <span>full_log — SYSCALL execve detail + PATH TRAVERSAL args</span>
+            <span class="rule">auid=1000 · uid=0 · euid=0</span>
+          </div>
+          <!-- Replace SC1 with your actual image path or base64 src -->
+          <img class="ss-img" src="SC1_PLACEHOLDER" alt="full log unrar" />
+          <div class="ss-annotation">
+            <span class="key">uid=</span><span class="val">0 (root)</span> &nbsp;·&nbsp;
+            <span class="key">euid=</span><span class="val">0</span> &nbsp;·&nbsp;
+            <span class="key">flags:</span><span class="val">-o+ -ep</span> &nbsp;·&nbsp;
+            <span class="note">archive extracted → authorized_keys overwritten</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     SLIDE 4 — SSH INITIAL ACCESS
+════════════════════════════════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span>
+      <span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>wazo / OSsec</b></span>
+      <span>SOURCE IP <b style="color:var(--red)">105.68.208.123</b></span>
+      <span>TIME <b>21:38:05 → 07</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 3</span>
+    <span class="step-name">Initial SSH Access — Root Authentication Without Password</span>
+    <span class="step-time">21:38:05.341</span>
+    <span class="step-mitre">T1078 · Valid Accounts</span>
+  </div>
+  <div class="content">
+    <div class="panel" style="flex:1;">
+      <div class="panel-header">
+        <div class="ph-dot" style="background:#00e68a;box-shadow:0 0 8px #00e68a"></div>
+        <span class="ph-title" style="color:#00e68a">sshd Authentication Logs — Wazuh Dashboard</span>
+        <span class="ph-badge badge-warn">3 EVENTS · RULES 5762 / 5715 / 5501</span>
+      </div>
+      <div class="img-body">
+        <div class="ss-card" id="sc2">
+          <div class="ss-label">
+            <span>connection reset → authentication success → PAM session opened</span>
+            <span class="rule">Rules: 5762 · 5715 · 5501</span>
+          </div>
+          <!-- Replace SC2 with your actual image path or base64 src -->
+          <img class="ss-img" src="SC2_PLACEHOLDER" alt="SSH logs" />
+          <div class="ss-annotation">
+            <span class="key">21:38:07</span> — <span class="val">connection reset</span> (5762) &nbsp;|&nbsp;
+            <span class="key">21:38:05</span> — <span class="ok">auth success</span> (5715) &nbsp;|&nbsp;
+            <span class="key">21:38:05</span> — <span class="ok">PAM session opened</span> (5501)
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div class="ss-card" id="rule1">
+            <div class="ss-label" style="justify-content:center;"><span style="color:var(--yellow)">Rule 5762</span></div>
+            <div class="ss-annotation" style="text-align:center;font-size:13px;">
+              <div style="color:var(--red);margin-bottom:6px;font-size:14px;">Connection Reset</div>
+              SSH connection reset — possible automatic reconnection after key injection.
+            </div>
+          </div>
+          <div class="ss-card" id="rule2">
+            <div class="ss-label" style="justify-content:center;"><span style="color:#00e68a">Rule 5715</span></div>
+            <div class="ss-annotation" style="text-align:center;font-size:13px;">
+              <div style="color:#00e68a;margin-bottom:6px;font-size:14px;">Auth Success</div>
+              SSH login <strong>without password</strong> — via key injected into <span style="color:var(--red)">/root/.ssh/authorized_keys</span>.
+            </div>
+          </div>
+          <div class="ss-card" id="rule3">
+            <div class="ss-label" style="justify-content:center;"><span style="color:var(--cyan)">Rule 5501</span></div>
+            <div class="ss-annotation" style="text-align:center;font-size:13px;">
+              <div style="color:var(--cyan);margin-bottom:6px;font-size:14px;">PAM Session</div>
+              PAM session opened. Attacker now has a full <span style="color:var(--red)">interactive root shell</span> on the target.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="analysis-panel">
+      <div class="ap-header">🔐 ANALYSIS — SSH ACCESS</div>
+      <div class="ap-body">
+        <div class="fact-card crit" id="ssh-fc0">
+          <div class="fc-label">AUTH VIA INJECTED KEY</div>
+          <div class="fc-text">No password used. Access granted via the <span class="hiR">public key dropped</span> by the unrar exploit 52 seconds earlier.</div>
+        </div>
+        <div class="fact-card warn" id="ssh-fc1">
+          <div class="fc-label">TEMPORAL CORRELATION</div>
+          <div class="fc-text">Key injection <span class="hi">21:37:13</span> → SSH login <span class="hi">21:38:05</span> : delay of <span class="hiR">52 seconds</span>. Likely automated behavior.</div>
+        </div>
+        <div class="fact-card info" id="ssh-fc2">
+          <div class="fc-label">CONSTANT SOURCE IP</div>
+          <div class="fc-text"><span class="hiR">105.68.208.123</span> present since POST /login (20:36:53) through this SSH session. Same attacker.</div>
+        </div>
+        <div class="fact-card ok" id="ssh-fc3">
+          <div class="fc-label">NEXT STEP</div>
+          <div class="fc-text">Root shell obtained → <span class="hiG">whoami, id, uname</span> → reconnaissance → exfiltration → persistent backdoor.</div>
+        </div>
+        <div class="mitre-box" id="mb1">
+          <div class="mitre-title">MITRE ATT&amp;CK</div>
+          <div class="mitre-row"><span>T1078.003</span><b>Local Accounts</b></div>
+          <div class="mitre-row"><span>T1021.004</span><b>SSH Remote Services</b></div>
+          <div class="mitre-row"><span>T1098.004</span><b>SSH Auth Keys</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════ NAV ════════ -->
+<div class="slide-nav" id="nav"></div>
+<div class="slide-counter" id="counter">1 / 5</div>
+<div class="nav-hint">← → / SPACE</div>
+
+<script>
+const TOTAL = 5;
+let cur = 0;
+
+function buildNav() {
+  const nav = document.getElementById('nav');
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    nav.appendChild(d);
+  }
+}
+
+function goTo(n) {
+  for (let i = 0; i < TOTAL; i++) {
+    const s = document.getElementById('slide-' + i);
+    s.style.display = 'none';
+    s.classList.remove('active', 'visible');
+    // reset animations
+    s.querySelectorAll('.ss-card, .fact-card, .mitre-box').forEach(el => el.classList.remove('shown'));
+  }
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === n));
+  document.getElementById('counter').textContent = (n + 1) + ' / ' + TOTAL;
+  cur = n;
+  const sl = document.getElementById('slide-' + n);
+  sl.style.display = 'flex';
+  sl.classList.add('active');
+  requestAnimationFrame(() => {
+    sl.classList.add('visible');
+    setTimeout(() => runAnim(n), 200);
+  });
+}
+
+function runAnim(n) {
+  if (n === 3) {
+    ['sc0', 'sc1'].forEach((id, i) =>
+      setTimeout(() => { const e = document.getElementById(id); if (e) e.classList.add('shown'); }, 150 + i * 320));
+  }
+  if (n === 4) {
+    setTimeout(() => { const e = document.getElementById('sc2'); if (e) e.classList.add('shown'); }, 150);
+    ['rule1', 'rule2', 'rule3'].forEach((id, i) =>
+      setTimeout(() => { const e = document.getElementById(id); if (e) e.classList.add('shown'); }, 420 + i * 180));
+    ['ssh-fc0', 'ssh-fc1', 'ssh-fc2', 'ssh-fc3'].forEach((id, i) =>
+      setTimeout(() => { const e = document.getElementById(id); if (e) e.classList.add('shown'); }, 300 + i * 160));
+    setTimeout(() => { const mb = document.getElementById('mb1'); if (mb) mb.classList.add('shown'); }, 1200);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') goTo(Math.min(cur + 1, TOTAL - 1));
+  if (e.key === 'ArrowLeft') goTo(Math.max(cur - 1, 0));
+});
+
+buildNav();
+goTo(0);
+</script>
+</body>
+</html>

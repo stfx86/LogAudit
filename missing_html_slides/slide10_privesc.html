@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRIVILEGE ESCALATION & ROOT BACKDOOR</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#020b10; --panel:#040f18; --border:#0d3a4a;
+  --cyan:#00d4ff; --red:#ff3c5a; --yellow:#ffd700;
+  --green:#00e68a; --text:#b0cdd8; --dim:#4a6a7a;
+  --mono:'Share Tech Mono',monospace;
+  --display:'Orbitron',sans-serif;
+  --body:'Rajdhani',sans-serif;
+}
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--body);
+  height:100vh;
+  overflow:hidden;
+}
+.stepbar {
+  display:flex;
+  align-items:center;
+  gap:22px;
+  padding:18px 40px;
+  border-bottom:2px solid var(--border);
+  background:rgba(0,212,255,0.03);
+}
+.step-num {
+  font-family:var(--display);
+  color:var(--dim);
+  font-size:22px;
+}
+.step-name {
+  flex:1;
+  font-family:var(--display);
+  color:var(--cyan);
+  font-size:30px;
+}
+.step-mitre {
+  font-family:var(--mono);
+  color:var(--green);
+  border:1px solid rgba(0,230,138,0.3);
+  padding:6px 16px;
+}
+.content {
+  height:calc(100vh - 90px);
+  padding:28px;
+}
+.panel {
+  height:100%;
+  border:1px solid var(--border);
+  background:var(--panel);
+  display:flex;
+  flex-direction:column;
+}
+.panel-header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:16px 24px;
+  border-bottom:1px solid var(--border);
+}
+.ph-dot {
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:var(--red);
+}
+.ph-title {
+  flex:1;
+  font-family:var(--display);
+  font-size:22px;
+}
+.badge {
+  font-family:var(--mono);
+  color:var(--red);
+  border:1px solid rgba(255,60,90,0.3);
+  padding:5px 12px;
+}
+.img-body {
+  flex:1;
+  padding:30px;
+}
+.placeholder {
+  height:100%;
+  border:2px dashed rgba(0,212,255,0.15);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-family:var(--mono);
+  font-size:28px;
+  color:var(--dim);
+  padding:40px;
+}
+</style>
+</head>
+<body>
+
+<div class="stepbar">
+  <div class="step-num">ATTACK STEP</div>
+  <div class="step-name">PRIVILEGE ESCALATION & ROOT BACKDOOR</div>
+  <div class="step-mitre">TA0004</div>
+</div>
+
+<div class="content">
+  <div class="panel">
+    <div class="panel-header">
+      <div class="ph-dot"></div>
+      <div class="ph-title">WAZUH / FORENSIC EVIDENCE</div>
+      <div class="badge">LOG ANALYSIS</div>
+    </div>
+
+    <div class="img-body">
+      <div class="placeholder">
+        Insert sudo abuse, password change and SSH backdoor logs here
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
