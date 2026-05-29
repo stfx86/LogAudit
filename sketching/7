@@ -1,0 +1,10 @@
+tar -czf /home/stt/everything.tar.gz -C /home/stt . --exclude=everything.tar.gz
+
+
+
+-c  Create — créer une nouvelle archive
+-z    Gzip — compresser avec gzip
+-f /home/stt/everything.tar.gzFichier de sortie
+-C /home/sttChanger le répertoire de base vers /home/stt
+ "."  Archiver tout le contenu du répertoire courant
+--exclude=everyt hing.tar.gzExclure l'archive elle-même (évite la récursion)

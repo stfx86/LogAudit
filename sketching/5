@@ -1,0 +1,7 @@
+snap advise-snap --format=json --command lls
+
+
+snap advise-snap --command <cmd> est un mécanisme de suggestion automatique de paquets Snap.
+Quand un utilisateur tape une commande introuvable dans le $PATH, le shell (via /etc/bash.bashrc ou command_not_found_handle) invoque automatiquement :
+
+donc : lls  →  commande inconnue  →  snap cherche s'il existe un paquet qui fournit "lls"

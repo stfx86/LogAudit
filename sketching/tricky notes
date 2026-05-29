@@ -1,0 +1,15 @@
+privilege escalation ===>auid !=uid/euid/suid/fsuid
+
+
+Effective UID (EUID): The EUID is critical for access control and permissions checks. It determines the access rights a process has for performing various operations. Notably, when a process runs a file with the SUID bit set, its EUID is temporarily set to the owner of the file, allowing it to perform actions with the permissions of that user.
+Saved Set-User-ID (SUID): This UID is a special type of identifier that a process uses to switch between user privileges. It allows a process to elevate its privileges (typically to root) to perform specific tasks and then revert to its original permissions. This mechanism is essential for programs that require higher…
+Filesystem UID (FSUID): The FSUID is specifically used for determining access rights for filesystem operations. It’s particularly useful in scenarios where a process needs to access files with different permissions without altering its overall access rights across the system.
+--------------------------------------------------
+
+
+
+
+
+ses in logs . what is means ?  ==>ses=244
+
+When a user logs in, the kernel assigns a unique integer to that session. Every process spawned within that session inherits the same ses number — for its entire lifetime, even across su, sudo, or child processes.
