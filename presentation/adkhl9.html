@@ -69,7 +69,7 @@
 
   .term-line              {display:block;white-space:pre-wrap;word-break:break-all;}
   .term-line.prompt       {color:#ff4444;}
-  .term-line.cmd          {color:#00ff41;}
+  .term-line.cmd          {color:#ff4444;}
   .term-line.out          {color:#aaaaaa;}
   .term-line.out-highlight{color:#ffd700;}
   .term-line.out-warn     {color:#ff8c00;}
@@ -176,7 +176,7 @@
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
           <div class="card-img-placeholder" style="display:none;">[ image: 0-ful log-of-unrar.png ]</div>
         </div>
-        <div class="card-desc"><span class="note"> the </span></div>
+        <div class="card-desc"><span class="note"> An auditd SYSCALL event captured the execution of <span class="key">/usr/local/bin/unrar </span> running as root (UID=0), with the command extracting a RAR archive from <span class="key"> /tmp/uploads/ </span> into <span class="key"> /tmp/processed/</span> using the<span class="key"> -o+ (overwrite silently) and -ep (strip paths) flags</span. The process ran under session 239 from the working directory /home/stt/vuln-lab </span></div>
       </div><!-- /log-card lc1 -->
 
     </div><!-- /scroll-body -->
@@ -219,8 +219,8 @@
 
       <div class="log-card" id="ssh_lc1">
         <div class="card-label">
-          <span class="card-label-left">TITRE DU LOG</span>
-          <span class="card-label-right">Rule #XXXXX</span>
+          <span class="card-label-left">App log</span>
+          <span class="card-label-right">Rule</span>
         </div>
         <div class="card-img-wrap" onclick="openLightbox(this)">
           <img class="card-img" src="../sketching/1-2_from_web_app_logs.png" alt="description"
@@ -228,7 +228,7 @@
           <div class="card-img-placeholder" style="display:none;">[ image: nom.png ]</div>
         </div>
         <div class="card-desc">
-          <span class="note"> The attacker uploads a file named backup_data.rar. The application automatically triggers decompression via unrar, extracting the contents into the directory /tmp/processed/7f74a8fe-f62b-484 </span>
+          <span class="note"> The attacker uploads a file named backup_data.rar. The application automatically triggers decompression via unrar, extracting the contents into the directory <span class="key">/tmp/processed/7f74a8fe-f62b-484</span> </span>
         </div>
       </div><!-- /log-card ssh_lc1 -->
 
@@ -287,8 +287,8 @@
 
       <div class="log-card" id="ssh_conx">
         <div class="card-label">
-          <span class="card-label-left">TITRE DU LOG</span>
-          <span class="card-label-right">Rule #XXXXX</span>
+          <span class="card-label-left">SSH connection </span>
+          <span class="card-label-right">Rule </span>
         </div>
         <div class="card-img-wrap" onclick="openLightbox(this)">
           <img class="card-img" src="../sketching/connexion ssh.png" alt="description"
@@ -296,7 +296,7 @@
           <div class="card-img-placeholder" style="display:none;">[ image: nom.png ]</div>
         </div>
         <div class="card-desc">
-          <span class="note"> the historic ssh connection shows that the same @ip established a connection at </span>
+          <span class="note"> The SSH history shows that the same IP address (<span class="key"> 105.68.208.123</span>) established an ssh connection at <span class="key"> 21:38 </span> for <span class="key" >2 hours long !</span></span>
         </div>
       </div><!-- /log-card ssh_conx -->
 
@@ -342,15 +342,15 @@
       <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
     </div>
     <div class="topbar-right">
-      <span>AGENT <b>AGENT_NAME</b></span>
-      <span>SOURCE IP <b style="color:var(--red)">X.X.X.X</b></span>
-      <span>TIME <b>HH:MM:SS</b></span>
+      <span>AGENT <b>OSSEC</b></span>
+      <span>SOURCE IP <b style="color:var(--red)">105.68.208.123</b></span>
+      <span>TIME <b>21:28:</b></span>
     </div>
   </div>
   <div class="stepbar">
     <span class="step-num">ÉTAPE 4</span>
     <span class="step-name">Post-Compromise Reconnaissance</span>
-    <span class="step-time">21:38:19.mmm</span>
+    <span class="step-time">21:38:19</span>
     <span class="step-mitre">Reconnaissance</span>
   </div>
   <div class="slide-body">
@@ -367,7 +367,7 @@
           <div class="card-img-placeholder" style="display:none;">[ image: YOUR_IMAGE.png ]</div>
         </div>
         <div class="card-desc">
-          <span class="note"> ------ </span>
+          <span class="note"> identification of the current user</span>
         </div>
       </div>
       
@@ -380,7 +380,7 @@
       <!-- LOG CARD — paste inside .scroll-body, give id a unique name -->
 <div class="log-card" id="card3_1">
   <div class="card-label">
-    <span class="card-label-left">Auditd: Command execution — /bin/bash</span>
+    <span class="card-label-left">Auditd: Command execution — /usr/bin/ls</span>
     <span class="card-label-right">Rule #100042</span>
   </div>
   <div class="card-img-wrap" onclick="openLightbox(this)">
@@ -389,13 +389,13 @@
     <div class="card-img-placeholder" style="display:none;">[ image: YOUR_IMAGE.png ]</div>
   </div>
   <div class="card-desc">
-    <span class="note"> Your description here. </span>
+    <span class="note"> directory enumeration </span>
   </div>
 </div><!-- /log-card cardN_1 -->
       
       <div class="log-card" id="card3_2">
   <div class="card-label">
-    <span class="card-label-left">Auditd: Command execution — /bin/bash</span>
+    <span class="card-label-left">Auditd: Command execution — /bin/grep</span>
     <span class="card-label-right">Rule #100042</span>
   </div>
   <div class="card-img-wrap" onclick="openLightbox(this)">
@@ -410,7 +410,7 @@
       
    <div class="log-card" id="card3_3">
   <div class="card-label">
-    <span class="card-label-left">Auditd: Command execution — /bin/bash</span>
+    <span class="card-label-left">Auditd: Command execution — /bin/grep</span>
     <span class="card-label-right">Rule #100042</span>
   </div>
   <div class="card-img-wrap" onclick="openLightbox(this)">
@@ -419,7 +419,7 @@
     <div class="card-img-placeholder" style="display:none;">[ image: YOUR_IMAGE.png ]</div>
   </div>
   <div class="card-desc">
-    <span class="note"> Your description here. </span>
+    <span class="note">   reconnaissance to locate <span class="key">Flask-based web applications</span>, configuration files, or source code that references the Flask framework</span>
   </div>
 </div><!-- /log-card cardN_1 -->      
       
@@ -581,28 +581,24 @@ const SLIDE_TERMINAL_CONTENT = {
 
   /* ── Slide 0 : unrar Path Traversal ──────────────────── */
   0: [
-    { cmd: "curl -s -X POST http://10.0.0.5/upload -F 'file=@backup_data.rar'" },
-    { out: '{"status":"ok","path":"/tmp/processed/7f74a8fe-f62b-484"}', cls: "out-ok" },
+    { cmd:"unrar -o+ -ep /tmp/uploads/7f74a8fe-f62b-4849-ad13-453d6896009d.rar /tmp/processed/7f74a8fe-f62b-4849-ad13-453d6896009d" },
+   
     { spacer: true },
-    { cmd: "ls -la /tmp/processed/7f74a8fe-f62b-484/" },
-    { out: "total 8", cls: "out" },
-    { out: "-rw-r--r-- 1 www-data www-data  0 May 30 21:37 ../../../../root/.ssh/authorized_keys", cls: "out-err" },
-    { spacer: true },
-    { out: "# Path traversal successful — SSH key injected", cls: "comment" },
+  
   ],
 
   /* ── Slide 1 : SSH Initial Access ────────────────────── */
   1: [
-    { cmd: "unrar -o+ -ep '/tmp/uploads/7f74a8fe-...rar'  '/tmp/processed/7f74a8fe-...'" },
+    { cmd: "unrar -o+ -ep /tmp/uploads/7f74a8fe-f62b-4849-ad13-453d6896009d.rar  /tmp/processed/7f74a8fe-f62b-4849-ad13-453d6896009d " },
     { spacer: true },
     /* add more output lines here */
   ],
 
   /* ── Slide 2 : SSH Connection History ────────────────── */
   2: [
-    { cmd: "ssh root@10.0.0.5 -i ~/.ssh/id_rsa" },
+    { cmd: "ssh root@10.0.0.5 -i ~/.ssh/id_rsa" },    { out: "# this is probaly the command typed", cls: "comment" },
     { out: "Welcome to Ubuntu 22.04 LTS", cls: "out-ok" },
-    { out: "Last login: Wed May 29 03:12:44 2024 from 105.68.208.123", cls: "out-warn" },
+    { out: "Last login: Wed May 29 21:38:44 2026 from 105.68.208.123", cls: "out-warn" },
     { spacer: true },
     { out: "# Same source IP confirms attacker reuse", cls: "comment" },
   ],
@@ -620,17 +616,17 @@ const SLIDE_TERMINAL_CONTENT = {
 
   3: [
     { cmd: "id" },
-    { out: "output line",      cls: "out" },
+    { out: "#identification of the current user",      cls: "out" },
     { spacer: true },
       { cmd: "ls" },
-    { out: "out",      cls: "out" },
+    { out: "#directory enumeration",      cls: "out" },
     { spacer: true },
       { cmd: "grep  -r Flask /home/stt /var/www /opt" },
-    
+        { out: "  #reconnaissance to locate Flask-based web applications, configuration files, or source code that references the Flask framework",      cls: "out" },
     { spacer: true },
   ],
 
-  
+
   
   
   
