@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Étapes 5 à 8 : Scénario de Compromission</title>
+<title>Steps 5 to 9: Compromise Scenario</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -61,6 +61,23 @@
   .nav-dots { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:100; }
   .dot { width:12px; height:12px; border-radius:50%; background:var(--dim); cursor:pointer; transition:0.3s; }
   .dot.active { background:var(--cyan); box-shadow:0 0 8px var(--cyan); }
+  /* Add this to your existing CSS */
+.log-container {
+  scroll-behavior: smooth;
+  outline: none; /* Removes the focus border */
+}
+
+/* Optional: Make the scrollbar look 'hacker' style to match your theme */
+.log-container::-webkit-scrollbar {
+  width: 5px;
+}
+.log-container::-webkit-scrollbar-thumb {
+  background: var(--cyan);
+  border-radius: 10px;
+}
+.log-container::-webkit-scrollbar-track {
+  background: var(--panel);
+}
 </style>
 </head>
 <body>
@@ -68,8 +85,8 @@
 <div id="slide-0" class="slide">
   <div class="header">
     <div class="title-group">
-      <h1>Étape 5 : Exfiltration des Données</h1>
-      <h2>PARTIE 1 : ARCHIVAGE ET COMPRESSION</h2>
+      <h1>Step 5: Data Exfiltration</h1>
+      <h2>PART 1: ARCHIVING AND COMPRESSION</h2>
     </div>
     <div style="font-family:var(--mono); color:var(--dim);">ID: WAZUH-SEC-05A</div>
   </div>
@@ -77,42 +94,42 @@
   <div class="log-container">
     <div class="log-card warning" id="lc0">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE 1] DÉTECTION D'ARCHIVAGE (TAR)</span>
+        <span class="log-id">[EVIDENCE 1] ARCHIVING DETECTION (TAR)</span>
         <span>MITRE ATT&CK: T1560</span>
       </div>
       <div class="log-body">
         <img src="../sketching/7.png" alt="Log 7" class="log-img">
         <img src="../sketching/7-1.png" alt="Log 7-1" class="log-img">
         <div class="log-desc">
-          OSsec détecte l'exécution de la commande <span class="cmd">/usr/bin/tar</span> le 8 Mai à 21:45:55. Les logs d'audit système confirment les arguments passés : <span class="cmd">tar -czf /home/stt/everything.tar.gz</span>, montrant la création de l'archive dans le répertoire de l'utilisateur.
+          OSsec detects the execution of the command <span class="cmd">/usr/bin/tar</span> on May 8 at 21:45:55. System audit logs confirm the passed arguments: <span class="cmd">tar -czf /home/stt/everything.tar.gz</span>, showing the creation of the archive in the user's directory.
         </div>
       </div>
     </div>
 
     <div class="log-card critical" id="lc1">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE 2] PROCESSUS DE COMPRESSION (GZIP)</span>
+        <span class="log-id">[EVIDENCE 2] COMPRESSION PROCESS (GZIP)</span>
         <span>MITRE ATT&CK: T1560.001</span>
       </div>
       <div class="log-body">
         <img src="../sketching/8.png" alt="Log 8" class="log-img">
         <img src="../sketching/8-1.png" alt="Log 8-1" class="log-img">
         <div class="log-desc">
-          Suite à la commande précédente, OSsec enregistre l'exécution de <span class="cmd">/usr/bin/gzip</span>. L'appel système (SYSCALL execve) montre le processus <code>gzip</code> s'exécutant dans le répertoire <span class="cmd">/home/stt</span>.
-        </div>
-      </div>
+          Following the previous command, OSsec records the execution of <span class="cmd">/usr/bin/gzip</span>. The system call (SYSCALL execve) shows the <code>gzip</code> process running in the <span class="cmd">/home/stt</span> directory.
+          </div> 
+          </div>
     </div>
 
     <div class="log-card critical" id="lc2">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE 3] PRÉPARATION À L'EXFILTRATION (ENV)</span>
+        <span class="log-id">[EVIDENCE 3] PREPARATION FOR EXFILTRATION (ENV)</span>
         <span>MITRE ATT&CK: T1048</span>
       </div>
       <div class="log-body">
         <img src="../sketching/9.png" alt="Log 9" class="log-img">
-        <div class="log-desc">
-          Moins d'une minute plus tard, à 21:46:45, une nouvelle alerte OSsec est générée pour l'exécution de <span class="cmd">/usr/bin/env</span>, indiquant la préparation d'un environnement (potentiellement pour le transfert des données compressées).
-        </div>
+      <div class="log-desc">
+      Less than a minute later, at 21:46:45, a new OSsec alert is generated for the execution of <span class="cmd">/usr/bin/env</span>, indicating the preparation of an environment (potentially for the transfer of compressed data).
+      </div>
       </div>
     </div>
   </div>
@@ -121,8 +138,8 @@
 <div id="slide-1" class="slide">
   <div class="header">
     <div class="title-group">
-      <h1>Étape 6 : Exfiltration via SFTP</h1>
-      <h2>(NOUVELLE SESSION SSH)</h2>
+      <h1>Step 6: Exfiltration via SFTP</h1>
+      <h2>(NEW SSH SESSION)</h2>
     </div>
     <div style="font-family:var(--mono); color:var(--dim);">ID: WAZUH-SEC-06</div>
   </div>
@@ -130,13 +147,13 @@
   <div class="log-container">
     <div class="log-card critical" id="lc3">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] EXFILTRATION SUR CANAL CHIFFRÉ (SFTP)</span>
+        <span class="log-id">[EVIDENCE] EXFILTRATION OVER ENCRYPTED CHANNEL (SFTP)</span>
         <span>MITRE ATT&CK: T1048.002</span>
       </div>
       <div class="log-body">
         <img src="../sketching/open_ssh(2)-sftp-close_ssh.png" alt="Log SSH SFTP" class="log-img">
         <div class="log-desc">
-          Les logs d'authentification enregistrent un cycle complet de connexion : l'ouverture d'une session SSH, l'appel au sous-système <span class="cmd">sftp-server</span> pour transférer l'archive précédemment créée, suivi de la fermeture immédiate de la session SSH.
+          Authentication logs record a complete connection cycle: opening an SSH session, calling the <span class="cmd">sftp-server</span> subsystem to transfer the previously created archive, followed by the immediate closure of the SSH session.
         </div>
       </div>
     </div>
@@ -146,8 +163,8 @@
 <div id="slide-2" class="slide">
   <div class="header">
     <div class="title-group">
-      <h1>Étape 7 : Exploration Post-Exfiltration</h1>
-      <h2>ET VOL DE CREDENTIALS</h2>
+      <h1>Step 7: Post-Exfiltration Exploration</h1>
+      <h2>AND CREDENTIAL THEFT</h2>
     </div>
     <div style="font-family:var(--mono); color:var(--dim);">ID: WAZUH-SEC-07</div>
   </div>
@@ -155,39 +172,39 @@
   <div class="log-container">
     <div class="log-card warning" id="lc4">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] DÉTECTION D'EXPLORATION (CAT)</span>
+        <span class="log-id">[EVIDENCE] EXPLORATION DETECTION (CAT)</span>
         <span>MITRE ATT&CK: T1083</span>
       </div>
       <div class="log-body">
         <img src="../sketching/exploration post exfiltrartion/1-cat.png" alt="Log cat" class="log-img">
         <div class="log-desc">
-          OSsec détecte l'exécution de la commande <span class="cmd">/usr/bin/cat</span>. Cette commande est typiquement utilisée en phase de post-compromission pour explorer manuellement le contenu de fichiers locaux sur la machine cible.
+          OSsec detects the execution of the <span class="cmd">/usr/bin/cat</span> command. This command is typically used in the post-compromise phase to manually explore the contents of local files on the target machine.
         </div>
       </div>
     </div>
 
     <div class="log-card critical" id="lc5">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] INSPECTION DE CODE SOURCE (VIM)</span>
+        <span class="log-id">[EVIDENCE] SOURCE CODE INSPECTION (VIM)</span>
         <span>MITRE ATT&CK: T1083</span>
       </div>
       <div class="log-body">
         <img src="../sketching/exploration post exfiltrartion/2-vim(app.py).png" alt="Log vim" class="log-img">
         <div class="log-desc">
-          Peu après, l'exécution de l'éditeur <span class="cmd">/usr/bin/vim</span> est enregistrée. L'attaquant ouvre le fichier source <code>app.py</code> pour inspecter la logique de l'application et chercher des informations sensibles.
+          Shortly after, the execution of the <span class="cmd">/usr/bin/vim</span> editor is recorded. The attacker opens the <code>app.py</code> source file to inspect the application's logic and search for sensitive information.
         </div>
       </div>
     </div>
 
     <div class="log-card critical" id="lc6">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] DÉCOUVERTE D'IDENTIFIANTS EN DUR</span>
+        <span class="log-id">[EVIDENCE] DISCOVERY OF HARDCODED CREDENTIALS</span>
         <span>MITRE ATT&CK: T1552.001</span>
       </div>
       <div class="log-body">
         <img src="../sketching/hard_coded_creds_of_mysql.png" alt="Hardcoded Creds" class="log-img">
         <div class="log-desc">
-          L'inspection de <code>app.py</code> expose des identifiants MySQL codés en dur (utilisateur <code>root</code> / mot de passe <code>password123</code>). Ces credentials permettent à l'attaquant d'accéder directement à la base de données applicative.
+          The inspection of <code>app.py</code> exposes hardcoded MySQL credentials (user <code>root</code> / password <code>password123</code>). These credentials allow the attacker direct access to the application database.
         </div>
       </div>
     </div>
@@ -197,7 +214,7 @@
 <div id="slide-3" class="slide">
   <div class="header">
     <div class="title-group">
-      <h1>Étape 8 : Exfiltration de la Base de Données</h1>
+      <h1>Step 8: Database Exfiltration</h1>
       <h2>VIA MYSQLDUMP</h2>
     </div>
     <div style="font-family:var(--mono); color:var(--dim);">ID: WAZUH-SEC-08</div>
@@ -206,39 +223,39 @@
   <div class="log-container">
     <div class="log-card critical" id="lc7">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] EXÉCUTION DE MYSQLDUMP</span>
+        <span class="log-id">[EVIDENCE] MYSQLDUMP EXECUTION</span>
         <span>MITRE ATT&CK: T1567</span>
       </div>
       <div class="log-body">
         <img src="../sketching/mysqldump/mysqldump(exfiltration of DB).png" alt="Audit mysqldump" class="log-img">
         <div class="log-desc">
-          OSsec enregistre l'utilisation de l'utilitaire <span class="cmd">/usr/bin/mysqldump</span> le 8 Mai à 21:50:33. L'attaquant commence l'extraction de la base de données <code>zipvault</code> en utilisant les privilèges root obtenus précédemment.
+          OSsec records the use of the <span class="cmd">/usr/bin/mysqldump</span> utility on May 8 at 21:50:33. The attacker begins extracting the <code>zipvault</code> database using the root privileges obtained previously.
         </div>
       </div>
     </div>
 
     <div class="log-card critical" id="lc8">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] UTILISATION DES CREDENTIALS VOLÉS (EXECVE)</span>
+        <span class="log-id">[EVIDENCE] USE OF STOLEN CREDENTIALS (EXECVE)</span>
         <span>MITRE ATT&CK: T1552.001</span>
       </div>
       <div class="log-body">
         <img src="../sketching/mysqldump/full-log-mysqldump.png" alt="Full Log mysqldump" class="log-img">
         <div class="log-desc">
-          Le log détaillé de l'appel système révèle les arguments en clair : <span class="cmd">-u root -p password123</span>. L'attaquant réutilise avec succès le mot de passe extrait du fichier <code>app.py</code> pour dumper l'intégralité de la base de données.
+          The detailed system call log reveals the cleartext arguments: <span class="cmd">-u root -p password123</span>. The attacker successfully reuses the password extracted from the <code>app.py</code> file to dump the entire database.
         </div>
       </div>
     </div>
 
     <div class="log-card warning" id="lc9">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] VÉRIFICATION DU DUMP SQL</span>
+        <span class="log-id">[EVIDENCE] SQL DUMP VERIFICATION</span>
         <span>MITRE ATT&CK: T1083</span>
       </div>
       <div class="log-body">
         <img src="../sketching/mysqldump/verification _of_ _sql_dump.png" alt="Audit cat dump" class="log-img">
         <div class="log-desc">
-          Une commande <span class="cmd">/usr/bin/cat</span> est enregistrée à 21:51:19. L'attaquant vérifie le contenu du fichier SQL généré pour s'assurer que l'extraction des données sensibles s'est déroulée correctement avant l'exfiltration finale.
+          A <span class="cmd">/usr/bin/cat</span> command is recorded at 21:51:19. The attacker verifies the content of the generated SQL file to ensure the extraction of sensitive data was successful before the final exfiltration.
         </div>
       </div>
     </div>
@@ -248,8 +265,8 @@
 <div id="slide-4" class="slide">
   <div class="header">
     <div class="title-group">
-      <h1>Étape 9 : Tentative d’Élévation de Privilèges</h1>
-      <h2>ANALYSE DES TENTATIVES D'ESCALADE</h2>
+      <h1>Step 9: Privilege Escalation Attempt</h1>
+      <h2>ESCALATION ATTEMPTS ANALYSIS</h2>
     </div>
     <div style="font-family:var(--mono); color:var(--dim);">ID: WAZUH-SEC-09</div>
   </div>
@@ -258,80 +275,80 @@
     
     <div class="log-card warning" id="lc10">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] TENTATIVE 1 : TÉLÉCHARGEMENT D'EXPLOIT (CURL)</span>
+        <span class="log-id">[EVIDENCE] ATTEMPT 1: EXPLOIT DOWNLOAD (CURL)</span>
         <span>MITRE ATT&CK: T1105</span>
       </div>
       <div class="log-body">
         <img src="../sketching/privilege%20escalation/tentation%20copyfail/curl.png" alt="Log curl" class="log-img">
         <img src="../sketching/privilege%20escalation/tentation%20copyfail/curl-args.png" alt="Log curl args" class="log-img">
         <div class="log-desc">
-          L'attaquant tente de télécharger un exploit public depuis <span class="cmd">copy.fail/exp</span> en utilisant <span class="cmd">curl</span>. Les arguments révèlent l'URL de destination.
+          The attacker attempts to download a public exploit from <span class="cmd">copy.fail/exp</span> using <span class="cmd">curl</span>. The arguments reveal the destination URL.
         </div>
       </div>
     </div>
 
     <div class="log-card critical" id="lc11">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] TENTATIVE 2 : ÉCHEC DE CHANGEMENT D'UTILISATEUR (SU)</span>
+        <span class="log-id">[EVIDENCE] ATTEMPT 2: USER SWITCH FAILURE (SU)</span>
         <span>MITRE ATT&CK: T1110</span>
       </div>
       <div class="log-body">
         <img src="../sketching/privilege%20escalation/su/su-refused.png" alt="Su refused" class="log-img">
         <div class="log-desc">
-          Tentative de basculement vers un compte privilégié via <span class="cmd">su</span>. Wazuh enregistre un échec d'authentification PAM (Password failed).
+          Attempt to switch to a privileged account via <span class="cmd">su</span>. Wazuh records a PAM authentication failure (Password failed).
         </div>
       </div>
     </div>
 
     <div class="log-card warning" id="lc12">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] TENTATIVE 3 : RECONNAISSANCE DU NOYAU (UNAME)</span>
+        <span class="log-id">[EVIDENCE] ATTEMPT 3: KERNEL RECONNAISSANCE (UNAME)</span>
         <span>MITRE ATT&CK: T1082</span>
       </div>
       <div class="log-body">
         <img src="../sketching/privilege%20escalation/uname/uname-r.png" alt="Uname r" class="log-img">
         <div class="log-desc">
-          Exécution de <span class="cmd">uname -r</span> pour identifier la version précise du noyau Linux afin de rechercher des exploits de type "Local Privilege Escalation".
+          Execution of <span class="cmd">uname -r</span> to identify the precise Linux kernel version in order to search for "Local Privilege Escalation" exploits.
         </div>
       </div>
     </div>
 
     <div class="log-card warning" id="lc13">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] TENTATIVE 4 : RECHERCHE DE BINAIRES SUID (FIND)</span>
+        <span class="log-id">[EVIDENCE] ATTEMPT 4: SEARCH FOR SUID BINARIES (FIND)</span>
         <span>MITRE ATT&CK: T1548.001</span>
       </div>
       <div class="log-body">
         <img src="../sketching/privilege%20escalation/find/find(loking%20for%20suid).png" alt="Find SUID" class="log-img">
         <div class="log-desc">
-          L'attaquant utilise <span class="cmd">find</span> pour lister les fichiers avec le bit SUID activé, cherchant des binaires mal configurés pour élever ses privilèges.
+          The attacker uses <span class="cmd">find</span> to list files with the SUID bit activated, searching for misconfigured binaries to elevate their privileges.
         </div>
       </div>
     </div>
 
     <div class="log-card critical" id="lc14">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] TENTATIVE 5 : CONFIGURATION SUDO VULNÉRABLE</span>
+        <span class="log-id">[EVIDENCE] ATTEMPT 5: VULNERABLE SUDO CONFIGURATION</span>
         <span>MITRE ATT&CK: T1548.003</span>
       </div>
       <div class="log-body">
         <img src="../sketching/privilege%20escalation/sudo-l/sudo_-l_in_server.png" alt="Sudo -l" class="log-img">
         <div class="log-desc">
-          La commande <span class="cmd">sudo -l</span> révèle une faille critique : l'utilisateur dispose des droits <span class="cmd">NOPASSWD: ALL</span>, permettant d'exécuter n'importe quelle commande en root.
+          The <span class="cmd">sudo -l</span> command reveals a critical flaw: the user has <span class="cmd">NOPASSWD: ALL</span> rights, allowing them to execute any command as root.
         </div>
       </div>
     </div>
 
     <div class="log-card critical" id="lc15">
       <div class="log-header">
-        <span class="log-id">[EVIDENCE] ÉLÉVATION DE PRIVILÈGES RÉUSSIE (SUDO -I)</span>
-        <span>SITUATION : ACCÈS ROOT TOTAL</span>
+        <span class="log-id">[EVIDENCE] SUCCESSFUL PRIVILEGE ESCALATION (SUDO -I)</span>
+        <span>SITUATION: FULL ROOT ACCESS</span>
       </div>
       <div class="log-body">
         <img src="../sketching/privilege%20escalation/sudo2(real%20privilige)/sudo2(-i).png" alt="Sudo success" class="log-img">
         <img src="../sketching/privilege%20escalation/sudo2(real%20privilige)/full_log_sudo2.png" alt="Full log sudo" class="log-img">
         <div class="log-desc">
-          L'attaquant exécute <span class="cmd">sudo -i</span>. Le log d'audit confirme l'élévation réussie avec un EUID=0 (root) et l'ouverture d'une session shell privilégiée.
+          The attacker executes <span class="cmd">sudo -i</span>. The audit log confirms the successful escalation with an EUID=0 (root) and the opening of a privileged shell session.
         </div>
       </div>
     </div>
@@ -400,6 +417,24 @@ function runAnim(n) {
   else if (n === 3) animCards(['lc7', 'lc8', 'lc9'], 300, 400);
   else if (n === 4) animCards(['lc10', 'lc11', 'lc12', 'lc13', 'lc14', 'lc15'], 300, 300);
 }
+// --- ADD THIS TO THE BOTTOM OF YOUR SCRIPT ---
+
+// 1. Keyboard Navigation (Left / Right Arrows)
+document.addEventListener('keydown', (e) => {
+  // ONLY Left and Right arrows change the slides
+  if (e.key === 'ArrowRight') {
+    if (cur < TOTAL - 1) goTo(cur + 1);
+  } else if (e.key === 'ArrowLeft') {
+    if (cur > 0) goTo(cur - 1);
+  }
+  
+  // ArrowUp and ArrowDown are ignored here, 
+  // so the browser will naturally scroll your log-container.
+});
+
+// 2. Mouse Wheel Navigation (with cooldown to prevent skipping multiple slides)
+let scrollTimeout = false;
+
 </script>
 </body>
 </html>
