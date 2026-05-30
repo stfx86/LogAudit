@@ -18,105 +18,82 @@
   body{background:var(--bg);color:var(--text);font-family:var(--body);height:100vh;width:100vw;overflow:hidden;}
   body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);pointer-events:none;z-index:9999;}
 
-  /* SLIDE SYSTEM */
   .slide{position:absolute;inset:0;display:none;opacity:0;transition:opacity 0.4s;flex-direction:column;background:var(--bg);height:100vh;}
   .slide.active{display:flex;} .slide.visible{opacity:1;}
 
-  /* TOP BAR */
   .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border);background:rgba(4,15,24,0.98);flex-shrink:0;z-index:10;height:50px;}
   .logo{font-family:var(--display);font-size:11px;color:var(--cyan);letter-spacing:3px;}
   .tlp{background:#8b0000;color:#fff;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:2px;letter-spacing:2px;}
   .topbar-right{font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;gap:24px;}
   .topbar-right span b{color:var(--text);font-weight:normal;}
 
-  /* STEP BAR */
   .stepbar{display:flex;align-items:center;gap:25px;padding:8px 28px;border-bottom:1px solid var(--border);background:rgba(0,212,255,0.03);flex-shrink:0;z-index:10;height:60px;}
   .step-num{font-family:var(--display);font-size:20px;color:var(--dim);letter-spacing:2px;}
   .step-name{font-family:var(--display);font-size:20px;color:var(--cyan);letter-spacing:1px;flex:1;}
   .step-time{font-family:var(--mono);font-size:20px;color:var(--yellow);}
   .step-mitre{font-family:var(--mono);font-size:20px;color:var(--green);border:1px solid rgba(0,255,157,0.3);padding:2px 8px;border-radius:2px;}
 
-  /* SCROLL AREA */
-  .scroll-body{flex:1 1 auto;overflow-y:auto;padding:24px 32px 80px 32px;display:flex;flex-direction:column;gap:28px;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--cyan) transparent;}
+  .slide-body{flex:1 1 auto;display:flex;overflow:hidden;position:relative;}
+
+  .scroll-body{flex:1 1 auto;overflow-y:auto;padding:24px 32px 80px 32px;display:flex;flex-direction:column;gap:28px;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--cyan) transparent;transition:flex 0.35s ease;}
   .scroll-body::-webkit-scrollbar{width:6px;}
   .scroll-body::-webkit-scrollbar-track{background:rgba(0,0,0,0.3);border-radius:3px;}
   .scroll-body::-webkit-scrollbar-thumb{background:var(--cyan);border-radius:3px;}
   .scroll-body::-webkit-scrollbar-thumb:hover{background:var(--green);}
 
-  /* LOG CARD */
   .log-card{border:1px solid var(--border);border-radius:4px;background:#010c15;overflow:hidden;opacity:0;transform:translateY(16px);transition:opacity 0.5s,transform 0.5s;display:flex;flex-direction:column;flex-shrink:0;}
   .log-card.shown{opacity:1;transform:translateY(0);}
-
   .card-label{display:flex;justify-content:space-between;align-items:center;padding:9px 18px;background:rgba(0,0,0,0.5);border-bottom:1px solid var(--border);flex-shrink:0;}
   .card-label-left{font-family:var(--mono);font-size:12px;color:var(--cyan);}
   .card-label-right{font-family:var(--mono);font-size:11px;color:var(--yellow);}
-
-  /* IMAGE WRAP — click to expand */
-  .card-img-wrap{
-    position:relative;
-    cursor:zoom-in;
-    overflow:hidden;
-    border-bottom:1px solid var(--border);
-    background:#010912;
-  }
-  .card-img-wrap::after{
-    content:'🔍 click to expand';
-    position:absolute;bottom:8px;right:10px;
-    font-family:var(--mono);font-size:10px;
-    color:var(--cyan);background:rgba(2,11,16,0.82);
-    padding:3px 9px;border-radius:2px;
-    border:1px solid rgba(0,212,255,0.3);
-    opacity:0;transition:opacity 0.25s;pointer-events:none;
-  }
+  .card-img-wrap{position:relative;cursor:zoom-in;overflow:hidden;border-bottom:1px solid var(--border);background:#010912;}
+  .card-img-wrap::after{content:'🔍 click to expand';position:absolute;bottom:8px;right:10px;font-family:var(--mono);font-size:10px;color:var(--cyan);background:rgba(2,11,16,0.82);padding:3px 9px;border-radius:2px;border:1px solid rgba(0,212,255,0.3);opacity:0;transition:opacity 0.25s;pointer-events:none;}
   .card-img-wrap:hover::after{opacity:1;}
   .card-img{width:100%;display:block;transition:filter 0.25s;image-rendering:-webkit-optimize-contrast;}
   .card-img-wrap:hover .card-img{filter:brightness(1.1);}
   .card-img-placeholder{width:100%;min-height:120px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;color:var(--dim);}
-
   .card-desc{padding:18px 22px;font-family:var(--mono);font-size:18px;line-height:1.6;color:var(--text);flex-shrink:0;background:#010c15;}
-  .card-desc .key{color:var(--yellow);}
-  .card-desc .val{color:var(--red);}
-  .card-desc .ok {color:var(--green);}
-  .card-desc .note{color:var(--cyan);}
+  .card-desc .key{color:var(--yellow);} .card-desc .val{color:var(--red);} .card-desc .ok{color:var(--green);} .card-desc .note{color:var(--cyan);}
 
-  /* ══════════════════════════════════════
-     LIGHTBOX MODAL
-  ══════════════════════════════════════ */
-  #lightbox{
-    position:fixed;inset:0;z-index:10000;
-    background:rgba(2,11,16,0.93);
-    backdrop-filter:blur(8px);
-    display:none;align-items:center;justify-content:center;
-    cursor:zoom-out;
-  }
+  .attacker-terminal{width:0;flex-shrink:0;overflow:hidden;border-left:1px solid var(--border);background:#080808;display:flex;flex-direction:column;transition:width 0.35s ease;}
+  .attacker-terminal.open{width:45%;}
+
+  .term-titlebar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#1a1a1a;border-bottom:1px solid #333;flex-shrink:0;height:36px;}
+  .term-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+  .term-dot.close{background:#ff5f57;} .term-dot.min{background:#febc2e;} .term-dot.max{background:#28c840;}
+  .term-title-label{font-family:var(--mono);font-size:11px;color:#888;margin-left:6px;flex:1;text-align:center;}
+
+  .term-output{flex:1 1 auto;overflow-y:auto;padding:14px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#ccc;scrollbar-width:thin;scrollbar-color:#333 transparent;text-shadow:0 0 6px rgba(0,255,80,0.12);}
+  .term-output::-webkit-scrollbar{width:4px;}
+  .term-output::-webkit-scrollbar-thumb{background:#333;border-radius:2px;}
+
+  .term-line              {display:block;white-space:pre-wrap;word-break:break-all;}
+  .term-line.prompt       {color:#ff4444;}
+  .term-line.cmd          {color:#00ff41;}
+  .term-line.out          {color:#aaaaaa;}
+  .term-line.out-highlight{color:#ffd700;}
+  .term-line.out-warn     {color:#ff8c00;}
+  .term-line.out-ok       {color:#00ff9d;}
+  .term-line.out-err      {color:#ff3c5a;}
+  .term-line.comment      {color:#444;font-style:italic;}
+  .term-line.spacer       {display:block;height:6px;}
+
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  .cursor{display:inline-block;width:8px;height:14px;background:#00ff41;vertical-align:middle;animation:blink 1s step-end infinite;margin-left:2px;}
+
+  .terminal-toggle-btn{position:fixed;bottom:14px;right:90px;z-index:300;font-family:var(--mono);font-size:11px;color:var(--green);background:rgba(2,11,16,0.92);border:1px solid rgba(0,255,157,0.35);padding:5px 14px;border-radius:2px;cursor:pointer;letter-spacing:1px;transition:all 0.2s;display:flex;align-items:center;gap:6px;}
+  .terminal-toggle-btn:hover{border-color:var(--green);box-shadow:0 0 14px rgba(0,255,157,0.25);color:#fff;}
+  .term-indicator{width:7px;height:7px;border-radius:50%;background:var(--red);animation:blink 0.9s step-end infinite;display:inline-block;}
+  .terminal-toggle-btn.active .term-indicator{background:var(--green);}
+
+  #lightbox{position:fixed;inset:0;z-index:10000;background:rgba(2,11,16,0.93);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;cursor:zoom-out;}
   #lightbox.open{display:flex;}
-  #lightbox-img{
-    max-width:92vw;max-height:90vh;
-    border:1px solid var(--cyan);
-    border-radius:4px;
-    box-shadow:0 0 60px rgba(0,212,255,0.25),0 0 120px rgba(0,212,255,0.08);
-    animation:lbIn 0.22s ease;
-    object-fit:contain;
-  }
+  #lightbox-img{max-width:92vw;max-height:90vh;border:1px solid var(--cyan);border-radius:4px;box-shadow:0 0 60px rgba(0,212,255,0.25),0 0 120px rgba(0,212,255,0.08);animation:lbIn 0.22s ease;object-fit:contain;}
   @keyframes lbIn{from{opacity:0;transform:scale(0.88);}to{opacity:1;transform:scale(1);}}
-  #lightbox-close{
-    position:fixed;top:18px;right:22px;
-    font-family:var(--mono);font-size:16px;color:var(--cyan);
-    cursor:pointer;z-index:10001;
-    background:rgba(2,11,16,0.85);border:1px solid var(--border);
-    padding:5px 14px;border-radius:3px;
-    transition:color 0.2s,border-color 0.2s;
-  }
+  #lightbox-close{position:fixed;top:18px;right:22px;font-family:var(--mono);font-size:16px;color:var(--cyan);cursor:pointer;z-index:10001;background:rgba(2,11,16,0.85);border:1px solid var(--border);padding:5px 14px;border-radius:3px;transition:color 0.2s,border-color 0.2s;}
   #lightbox-close:hover{color:var(--red);border-color:var(--red);}
-  #lightbox-caption{
-    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
-    font-family:var(--mono);font-size:11px;color:var(--dim);
-    background:rgba(2,11,16,0.85);padding:4px 16px;border-radius:2px;
-    border:1px solid var(--border);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80vw;
-  }
+  #lightbox-caption{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--dim);background:rgba(2,11,16,0.85);padding:4px 16px;border-radius:2px;border:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80vw;}
 
-  /* NAV */
   .slide-nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:200;}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--dim);cursor:pointer;transition:all 0.3s;}
   .dot.active{background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
@@ -125,23 +102,41 @@
 </head>
 <body>
 
-<!-- ════════════════════════════════════════════════════
-     LIGHTBOX
-     ════════════════════════════════════════════════════ -->
+<!-- LIGHTBOX -->
 <div id="lightbox">
   <span id="lightbox-close">✕ ESC</span>
   <img id="lightbox-img" src="" alt="">
   <div id="lightbox-caption"></div>
 </div>
 
-<!-- ════════════════════════════════════════════════════
-     SLIDE 0 — unrar Path Traversal + SSH Key Injection
-     ════════════════════════════════════════════════════ -->
+<!-- TOGGLE BUTTON -->
+<button class="terminal-toggle-btn" id="termToggleBtn" onclick="toggleTerminal()">
+  <span class="term-indicator"></span>
+  ATTACKER TERMINAL
+</button>
+
+<!-- ═══════════════════════════════════════════════════════════
+  HOW TO ADD A NEW SLIDE
+  ──────────────────────────────────────────────────────────
+  1. Copy the slide block below and paste it after the last
+     slide, keeping the sequential id:  id="slide-N"
+  2. Update the topbar, stepbar, log-card content, and
+     terminal panel id  (id="terminal-N" / id="term-output-N")
+  3. Add the card ids to runAnim() in the <script> section
+  4. Add terminal lines to SLIDE_TERMINAL_CONTENT[N]
+  5. Increment TOTAL by 1  ← MOST COMMONLY FORGOTTEN STEP
+═══════════════════════════════════════════════════════════ -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SLIDE 0 — unrar Path Traversal
+     Cards: lc0, lc1
+     Terminal: SLIDE_TERMINAL_CONTENT[0]
+═══════════════════════════════════════════════════════════ -->
 <div class="slide" id="slide-0">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:14px">
-      <span class="logo">WAZUH SIEM</span>
-      <span class="tlp">TLP:RED</span>
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
     </div>
     <div class="topbar-right">
       <span>AGENT <b>ubuntu-target</b></span>
@@ -155,71 +150,57 @@
     <span class="step-time">21:37:13.129</span>
     <span class="step-mitre">T1190 · CVE-2022-30333</span>
   </div>
+  <div class="slide-body">
+    <div class="scroll-body">
 
-  <div class="scroll-body">
+      <div class="log-card" id="lc0">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Command execution — /usr/local/bin/unrar</span>
+          <span class="card-label-right">Rule #100001</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/0-unrar-command.png" alt="unrar command"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: 0-unrar-command.png ]</div>
+        </div>
+        <div class="card-desc"><span class="note"> The auditd event logged at <span class="key">21:37:13</span>confirms the execution of /usr/local/bin/unrar</span></div>
+      </div><!-- /log-card lc0 -->
 
-    <!-- LOG 1 -->
-    <div class="log-card" id="lc0">
-      <div class="card-label">
-        <span class="card-label-left">Auditd: Command execution — /usr/local/bin/unrar</span>
-        <span class="card-label-right">Rule #100001</span>
+      <div class="log-card" id="lc1">
+        <div class="card-label">
+          <span class="card-label-left">full_log — SYSCALL execve + PATH TRAVERSAL args</span>
+          <span class="card-label-right">auid=1000 · uid=0 · euid=0</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/0-ful log-of-unrar.png" alt="full log unrar"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: 0-ful log-of-unrar.png ]</div>
+        </div>
+        <div class="card-desc"><span class="note"> the </span></div>
+      </div><!-- /log-card lc1 -->
+
+    </div><!-- /scroll-body -->
+
+    <div class="attacker-terminal" id="terminal-0">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@attacker-kali: ~</span>
       </div>
-      <div class="card-img-wrap" onclick="openLightbox(this)">
-        <img class="card-img" src="../sketching/0-unrar-command.png" alt="unrar command"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-        <div class="card-img-placeholder" style="display:none;">[ image: 0-unrar-command.png ]</div>
-      </div>
-      <div class="card-desc">
-        <span class="note"> ktb chi 9alwa hna.</span>
-      </div>
+      <div class="term-output" id="term-output-0"></div>
     </div>
-
-    <!-- LOG 2 -->
-    <div class="log-card" id="lc1">
-      <div class="card-label">
-        <span class="card-label-left">full_log — SYSCALL execve + PATH TRAVERSAL args</span>
-        <span class="card-label-right">auid=1000 · uid=0 · euid=0</span>
-      </div>
-      <div class="card-img-wrap" onclick="openLightbox(this)">
-        <img class="card-img" src="../sketching/0-ful log-of-unrar.png" alt="full log unrar"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-        <div class="card-img-placeholder" style="display:none;">[ image: 0-ful log-of-unrar.png ]</div>
-      </div>
-      <div class="card-desc">
-        <span class="note"> hna ktb desc</span>
-      </div>
-    </div>
-
-    <!--
-    <div class="log-card" id="lc2">
-      <div class="card-label">
-        <span class="card-label-left">TITRE DU LOG</span>
-        <span class="card-label-right">Rule #XXXXX</span>
-      </div>
-      <div class="card-img-wrap" onclick="openLightbox(this)">
-        <img class="card-img" src="CHEMIN/VERS/IMAGE.png" alt="description"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-        <div class="card-img-placeholder" style="display:none;">[ image: nom.png ]</div>
-      </div>
-      <div class="card-desc">
-        <span class="key">champ=</span><span class="val">valeur</span><br>
-        <span class="note">→ Description de ce que ce log démontre.</span>
-      </div>
-    </div>
-    -->
-
-  </div><!-- /scroll-body -->
+  </div><!-- /slide-body -->
 </div><!-- /slide-0 -->
 
 
-<!-- ════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════════════
      SLIDE 1 — SSH Initial Access
-     ════════════════════════════════════════════════════ -->
+     Cards: ssh_lc1, ssh_lc0
+     Terminal: SLIDE_TERMINAL_CONTENT[1]
+═══════════════════════════════════════════════════════════ -->
 <div class="slide" id="slide-1">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:14px">
-      <span class="logo">WAZUH SIEM</span>
-      <span class="tlp">TLP:RED</span>
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
     </div>
     <div class="topbar-right">
       <span>AGENT <b>wazo / OSsec</b></span>
@@ -233,88 +214,530 @@
     <span class="step-time">21:38:05.341</span>
     <span class="step-mitre">T1078 · Valid Accounts</span>
   </div>
+  <div class="slide-body">
+    <div class="scroll-body">
 
-  <div class="scroll-body">
+      <div class="log-card" id="ssh_lc1">
+        <div class="card-label">
+          <span class="card-label-left">TITRE DU LOG</span>
+          <span class="card-label-right">Rule #XXXXX</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/1-2_from_web_app_logs.png" alt="description"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: nom.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="note"> The attacker uploads a file named backup_data.rar. The application automatically triggers decompression via unrar, extracting the contents into the directory /tmp/processed/7f74a8fe-f62b-484 </span>
+        </div>
+      </div><!-- /log-card ssh_lc1 -->
 
-    <div class="log-card" id="ssh_lc1">
-      <div class="card-label">
-        <span class="card-label-left">TITRE DU LOG</span>
-        <span class="card-label-right">Rule #XXXXX</span>
+      <div class="log-card" id="ssh_lc0">
+        <div class="card-label">
+          <span class="card-label-left">sshd Authentication Logs — connection reset → auth success → PAM session</span>
+          <span class="card-label-right">Rules 5762 · 5715 · 5501</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/00-rist ssh-intial access.png" alt="SSH logs"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;"></div>
+        </div>
+        <div class="card-desc">
+          <span class="note"> After the "unrar" suspicious command, an ssh connection took place </span>
+        </div>
+      </div><!-- /log-card ssh_lc0 -->
+
+    </div><!-- /scroll-body -->
+
+    <div class="attacker-terminal" id="terminal-1">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@attacker-kali: ~</span>
       </div>
-      <div class="card-img-wrap" onclick="openLightbox(this)">
-        <img class="card-img" src="../sketching/1-2_from_web_app_logs.png" alt="description"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-        <div class="card-img-placeholder" style="display:none;">[ image: nom.png ]</div>
-      </div>
-      <div class="card-desc">
-        <span class="note"> The attacker uploads a file named backup_data.rar. The application automatically triggers decompression via unrar, extracting the contents into the directory /tmp/processed/7f74a8fe-f62b-484 </span>
-      </div>
+      <div class="term-output" id="term-output-1"></div>
     </div>
-
-    <div class="log-card" id="ssh_lc0">
-      <div class="card-label">
-        <span class="card-label-left">sshd Authentication Logs — connection reset → auth success → PAM session</span>
-        <span class="card-label-right">Rules 5762 · 5715 · 5501</span>
-      </div>
-      <div class="card-img-wrap" onclick="openLightbox(this)">
-        <img class="card-img" src="../sketching/00-rist ssh-intial access.png" alt="SSH logs"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-        <div class="card-img-placeholder" style="display:none;"></div>
-      </div>
-      <div class="card-desc">
-        <span class="note"> After the "unrar" suspicious command, an ssh connection took place </span>
-      </div>
-    </div>
-
-    <!--
-    <div class="log-card" id="ssh_lc2">
-      <div class="card-label">
-        <span class="card-label-left">TITRE DU LOG</span>
-        <span class="card-label-right">Rule #XXXXX</span>
-      </div>
-      <div class="card-img-wrap" onclick="openLightbox(this)">
-        <img class="card-img" src="CHEMIN/VERS/IMAGE.png" alt="description"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-        <div class="card-img-placeholder" style="display:none;">[ image: nom.png ]</div>
-      </div>
-      <div class="card-desc">
-        <span class="key">champ=</span><span class="val">valeur</span><br>
-        <span class="note">→ Description.</span>
-      </div>
-    </div>
-    -->
-
-  </div><!-- /scroll-body -->
+  </div><!-- /slide-body -->
 </div><!-- /slide-1 -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SLIDE 2 — SSH Connection History
+     Cards: ssh_conx
+     Terminal: SLIDE_TERMINAL_CONTENT[2]
+═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>OSsec</b></span>
+      <span>SOURCE IP <b style="color:var(--red)">105.68.208.123</b></span>
+      <span>TIME <b>21:38:05 → 07</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">ÉTAPE 3</span>
+    <span class="step-name">SSH Initial access</span>
+    <span class="step-time">21:38:05.341</span>
+    <span class="step-mitre">T1078 · Valid Accounts</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+
+      <div class="log-card" id="ssh_conx">
+        <div class="card-label">
+          <span class="card-label-left">TITRE DU LOG</span>
+          <span class="card-label-right">Rule #XXXXX</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/connexion ssh.png" alt="description"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: nom.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="note"> the historic ssh connection shows that the same @ip established a connection at </span>
+        </div>
+      </div><!-- /log-card ssh_conx -->
+
+    </div><!-- /scroll-body -->
+
+    <div class="attacker-terminal" id="terminal-2">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@attacker-kali: ~</span>
+      </div>
+      <div class="term-output" id="term-output-2"></div>
+    </div>
+  </div><!-- /slide-body -->
+</div><!-- /slide-2 -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="slide" id="slide-3">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>AGENT_NAME</b></span>
+      <span>SOURCE IP <b style="color:var(--red)">X.X.X.X</b></span>
+      <span>TIME <b>HH:MM:SS</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">ÉTAPE 4</span>
+    <span class="step-name">Post-Compromise Reconnaissance</span>
+    <span class="step-time">21:38:19.mmm</span>
+    <span class="step-mitre">Reconnaissance</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+
+      <div class="log-card" id="card3_0">
+        <div class="card-label">
+          <span class="card-label-left">Auditd - Command execution :/usr/bin/id</span>
+          <span class="card-label-right">Rule </span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/1-1.png" alt="description"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: YOUR_IMAGE.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="note"> ------ </span>
+        </div>
+      </div>
+      
+      
+      
+      
+      
+      
+      
+      <!-- LOG CARD — paste inside .scroll-body, give id a unique name -->
+<div class="log-card" id="card3_1">
+  <div class="card-label">
+    <span class="card-label-left">Auditd: Command execution — /bin/bash</span>
+    <span class="card-label-right">Rule #100042</span>
+  </div>
+  <div class="card-img-wrap" onclick="openLightbox(this)">
+    <img class="card-img" src="../sketching/1-0.png" alt="description"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+    <div class="card-img-placeholder" style="display:none;">[ image: YOUR_IMAGE.png ]</div>
+  </div>
+  <div class="card-desc">
+    <span class="note"> Your description here. </span>
+  </div>
+</div><!-- /log-card cardN_1 -->
+      
+      <div class="log-card" id="card3_2">
+  <div class="card-label">
+    <span class="card-label-left">Auditd: Command execution — /bin/bash</span>
+    <span class="card-label-right">Rule #100042</span>
+  </div>
+  <div class="card-img-wrap" onclick="openLightbox(this)">
+    <img class="card-img" src="../sketching/2.png" alt="description"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+    <div class="card-img-placeholder" style="display:none;">[ image: YOUR_IMAGE.png ]</div>
+  </div>
+  <div class="card-desc">
+    <span class="note"> Your description here. </span>
+  </div>
+</div><!-- /log-card cardN_1 -->
+      
+   <div class="log-card" id="card3_3">
+  <div class="card-label">
+    <span class="card-label-left">Auditd: Command execution — /bin/bash</span>
+    <span class="card-label-right">Rule #100042</span>
+  </div>
+  <div class="card-img-wrap" onclick="openLightbox(this)">
+    <img class="card-img" src="../sketching/recon-grep-full-command.png" alt="description"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+    <div class="card-img-placeholder" style="display:none;">[ image: YOUR_IMAGE.png ]</div>
+  </div>
+  <div class="card-desc">
+    <span class="note"> Your description here. </span>
+  </div>
+</div><!-- /log-card cardN_1 -->      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+    </div>
+    <div class="attacker-terminal" id="terminal-3">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@attacker-arch: ~</span>
+      </div>
+      <div class="term-output" id="term-output-3"></div>
+    </div>
+  </div>
+</div>
+═══════════════════════════════════════════════════════════ -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ═══════════════════════════════════════════════════════════
+  SLIDE TEMPLATE — copy this block to add a new slide
+  ──────────────────────────────────────────────────────────
+  Steps:
+    1. Replace every occurrence of "N" with the next number
+    2. Fill in topbar metadata (agent, ip, time)
+    3. Fill in stepbar (step number, name, time, MITRE tag)
+    4. Add log-card blocks inside .scroll-body (give each a unique id)
+    5. Add card ids to runAnim() below
+    6. Add terminal lines to SLIDE_TERMINAL_CONTENT[N]
+    7. Increment TOTAL by 1
+
+<div class="slide" id="slide-N">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>AGENT_NAME</b></span>
+      <span>SOURCE IP <b style="color:var(--red)">X.X.X.X</b></span>
+      <span>TIME <b>HH:MM:SS</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">ÉTAPE N</span>
+    <span class="step-name">STEP NAME HERE</span>
+    <span class="step-time">HH:MM:SS.mmm</span>
+    <span class="step-mitre">TXXXX · Technique Name</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+
+      <div class="log-card" id="cardN_0">
+        <div class="card-label">
+          <span class="card-label-left">LOG TITLE</span>
+          <span class="card-label-right">Rule #XXXXX</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/YOUR_IMAGE.png" alt="description"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: YOUR_IMAGE.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="note"> Your description here. </span>
+        </div>
+      </div>
+
+    </div>
+    <div class="attacker-terminal" id="terminal-N">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@attacker-kali: ~</span>
+      </div>
+      <div class="term-output" id="term-output-N"></div>
+    </div>
+  </div>
+</div>
+═══════════════════════════════════════════════════════════ -->
+
 
 <div class="slide-nav" id="nav"></div>
 <div class="nav-hint">← → / SPACE</div>
 
 <script>
-const TOTAL = 2;
-let cur = 0;
+/* ═══════════════════════════════════════════════════════════
+   SLIDE COUNT
+   ──────────────────────────────────────────────────────────
+   !! MUST match the number of slide-N divs above !!
+   If you add a slide, increment this number.
+═══════════════════════════════════════════════════════════ */
+const TOTAL = 4; /* <-- update this when adding slides */
 
-/* ── LIGHTBOX ── */
+
+/* ═══════════════════════════════════════════════════════════
+   ATTACKER TERMINAL CONTENT
+   ──────────────────────────────────────────────────────────
+   Each key = slide index (0, 1, 2 …)
+   Each value = array of line objects:
+
+   { cmd: "command text" }
+     Renders as:  root@arch:~#  command text
+     (red prompt + green text)
+
+   { out: "output text", cls: "CLASS" }
+     cls values:
+       "out"            grey   — normal output
+       "out-highlight"  yellow — column headers / labels
+       "out-warn"       orange — notable / risky output
+       "out-ok"         green  — success messages
+       "out-err"        red    — errors / alerts
+       "comment"        dim    — italic remarks (# notes)
+
+   { spacer: true }
+     Inserts a blank line between blocks.
+
+   The last entry automatically gets a blinking cursor.
+═══════════════════════════════════════════════════════════ */
+const SLIDE_TERMINAL_CONTENT = {
+
+  /* ── Slide 0 : unrar Path Traversal ──────────────────── */
+  0: [
+    { cmd: "curl -s -X POST http://10.0.0.5/upload -F 'file=@backup_data.rar'" },
+    { out: '{"status":"ok","path":"/tmp/processed/7f74a8fe-f62b-484"}', cls: "out-ok" },
+    { spacer: true },
+    { cmd: "ls -la /tmp/processed/7f74a8fe-f62b-484/" },
+    { out: "total 8", cls: "out" },
+    { out: "-rw-r--r-- 1 www-data www-data  0 May 30 21:37 ../../../../root/.ssh/authorized_keys", cls: "out-err" },
+    { spacer: true },
+    { out: "# Path traversal successful — SSH key injected", cls: "comment" },
+  ],
+
+  /* ── Slide 1 : SSH Initial Access ────────────────────── */
+  1: [
+    { cmd: "unrar -o+ -ep '/tmp/uploads/7f74a8fe-...rar'  '/tmp/processed/7f74a8fe-...'" },
+    { spacer: true },
+    /* add more output lines here */
+  ],
+
+  /* ── Slide 2 : SSH Connection History ────────────────── */
+  2: [
+    { cmd: "ssh root@10.0.0.5 -i ~/.ssh/id_rsa" },
+    { out: "Welcome to Ubuntu 22.04 LTS", cls: "out-ok" },
+    { out: "Last login: Wed May 29 03:12:44 2024 from 105.68.208.123", cls: "out-warn" },
+    { spacer: true },
+    { out: "# Same source IP confirms attacker reuse", cls: "comment" },
+  ],
+
+
+
+
+
+
+
+
+
+
+ 
+
+  3: [
+    { cmd: "id" },
+    { out: "output line",      cls: "out" },
+    { spacer: true },
+      { cmd: "ls" },
+    { out: "out",      cls: "out" },
+    { spacer: true },
+      { cmd: "grep  -r Flask /home/stt /var/www /opt" },
+    
+    { spacer: true },
+  ],
+
+  
+  
+  
+  
+  /* ── ADD NEW SLIDES HERE ──────────────────────────────
+     Copy the block below, replace N with the slide index:
+
+  N: [
+    { cmd: "your command here" },
+    { out: "output line",      cls: "out" },
+    { spacer: true },
+  ],
+  ─────────────────────────────────────────────────────── */
+};
+
+
+/* ═══════════════════════════════════════════════════════════
+   CARD ANIMATION MAP
+   ──────────────────────────────────────────────────────────
+   Add an entry for every new slide:
+     if (n === N) animCards(['cardN_0', 'cardN_1'], 150, 320);
+
+   animCards(ids, baseDelayMs, stepBetweenCardsMs)
+═══════════════════════════════════════════════════════════ */
+function runAnim(n) {
+  if (n === 0) animCards(['lc0', 'lc1'],       150, 320);
+  if (n === 1) animCards(['ssh_lc1', 'ssh_lc0'], 150, 320);
+  if (n === 2) animCards(['ssh_conx'],          150, 320);
+  if (n === 3) animCards(['card3_0','card3_1','card3_2','card3_3'], 150, 320); 
+  /* Add more:  if (n === 3) animCards(['card3_0'], 150, 320); */
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   INTERNAL HELPERS — no need to edit below this line
+═══════════════════════════════════════════════════════════ */
+
+/* Render terminal for one slide */
+function renderTerminal(slideIdx) {
+  const out = document.getElementById('term-output-' + slideIdx);
+  if (!out) return;
+
+  const lines = SLIDE_TERMINAL_CONTENT[slideIdx];
+  if (!lines || lines.length === 0) {
+    const hint = document.createElement('span');
+    hint.className = 'term-line comment';
+    hint.textContent = '# No commands configured for this slide.';
+    out.appendChild(hint);
+    return;
+  }
+
+  lines.forEach((entry, i) => {
+    const isLast = (i === lines.length - 1);
+
+    if (entry.spacer) {
+      const sp = document.createElement('span');
+      sp.className = 'term-line spacer';
+      out.appendChild(sp);
+
+    } else if (entry.cmd !== undefined) {
+      const el = document.createElement('span');
+      el.className = 'term-line prompt';
+      el.textContent = 'root@arch:~#  ' + entry.cmd;
+      if (isLast) el.innerHTML += '<span class="cursor"></span>';
+      out.appendChild(el);
+
+    } else if (entry.out !== undefined) {
+      const el = document.createElement('span');
+      el.className = 'term-line ' + (entry.cls || 'out');
+      el.textContent = entry.out;
+      if (isLast) el.innerHTML += '<span class="cursor"></span>';
+      out.appendChild(el);
+    }
+  });
+}
+
+/* Render all terminals on boot */
+for (let i = 0; i < TOTAL; i++) renderTerminal(i);
+
+
+/* Lightbox */
 function openLightbox(wrap) {
   const img = wrap.querySelector('img');
   if (!img || img.style.display === 'none') return;
-  const lb    = document.getElementById('lightbox');
-  const lbImg = document.getElementById('lightbox-img');
-  const lbCap = document.getElementById('lightbox-caption');
-  lbImg.src = img.src;
-  lbImg.alt = img.alt;
-  lbCap.textContent = img.alt || img.src.split('/').pop();
-  lb.classList.add('open');
+  document.getElementById('lightbox-img').src = img.src;
+  document.getElementById('lightbox-img').alt = img.alt;
+  document.getElementById('lightbox-caption').textContent = img.alt || img.src.split('/').pop();
+  document.getElementById('lightbox').classList.add('open');
 }
-function closeLightbox() {
-  document.getElementById('lightbox').classList.remove('open');
-}
-document.getElementById('lightbox').addEventListener('click', function(e) {
-  if (e.target === this) closeLightbox();
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('lightbox')) closeLightbox();
 });
 document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
 
-/* ── SLIDES ── */
+
+/* Terminal toggle */
+let termOpen = false;
+function toggleTerminal() {
+  termOpen = !termOpen;
+  document.querySelectorAll('.attacker-terminal').forEach(t => t.classList.toggle('open', termOpen));
+  document.getElementById('termToggleBtn').classList.toggle('active', termOpen);
+}
+
+
+/* Slide navigation */
+let cur = 0;
+
 function buildNav() {
   const nav = document.getElementById('nav');
   for (let i = 0; i < TOTAL; i++) {
@@ -328,8 +751,7 @@ function buildNav() {
 function goTo(n) {
   for (let i = 0; i < TOTAL; i++) {
     const s = document.getElementById('slide-' + i);
-    s.style.display = 'none';
-    s.classList.remove('active', 'visible');
+    if (s) { s.style.display = 'none'; s.classList.remove('active', 'visible'); }
   }
   document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === n));
   cur = n;
@@ -340,18 +762,16 @@ function goTo(n) {
     sl.classList.add('visible');
     setTimeout(() => runAnim(n), 200);
   });
+  if (termOpen) {
+    document.querySelectorAll('.attacker-terminal').forEach(t => t.classList.add('open'));
+  }
 }
 
 function animCards(ids, baseDelay, step) {
   ids.forEach((id, i) => setTimeout(() => {
     const e = document.getElementById(id);
     if (e) e.classList.add('shown');
-  }, baseDelay + i * step));
-}
-
-function runAnim(n) {
-  if (n === 0) animCards(['lc0', 'lc1'], 150, 320);
-  if (n === 1) animCards(['ssh_lc1', 'ssh_lc0'], 150, 320);
+  }, baseDelay + i * (step || 0)));
 }
 
 document.addEventListener('keydown', e => {
@@ -359,8 +779,10 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeLightbox();
     return;
   }
+  if (e.ctrlKey && e.key === '`') { e.preventDefault(); toggleTerminal(); return; }
+  if (e.key === 'Escape' && termOpen) { toggleTerminal(); return; }
   if (e.key === 'ArrowRight' || e.key === ' ') goTo(Math.min(cur + 1, TOTAL - 1));
-  if (e.key === 'ArrowLeft') goTo(Math.max(cur - 1, 0));
+  if (e.key === 'ArrowLeft')                   goTo(Math.max(cur - 1, 0));
 });
 
 buildNav();
