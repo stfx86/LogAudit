@@ -198,45 +198,6 @@
     background:var(--green); box-shadow:0 0 6px rgba(0,230,138,0.4);
   }
   .nav-dot:hover:not(.active) { background:#4a8a9a; }
-  
-  .sidebar {
-  width: 320px;
-  transition: width 0.3s ease;
-  position: relative;
-}
-
-.sidebar.collapsed {
-  width: 50px;
-}
-
-.sidebar-toggle {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 100;
-  background: rgba(0,212,255,0.1);
-  border: 1px solid var(--cyan);
-  color: var(--cyan);
-  cursor: pointer;
-  padding: 4px 8px;
-}
-
-/* Hide sidebar content when collapsed */
-.sidebar.collapsed .sidebar-header,
-.sidebar.collapsed .progress-wrap,
-.sidebar.collapsed .item-info,
-.sidebar.collapsed .item-status {
-  display: none;
-}
-
-.sidebar.collapsed .file-item {
-  justify-content: center;
-  padding: 14px 0;
-}
-
-.sidebar.collapsed .item-index {
-  display: none;
-}
 </style>
 </head>
 <body>
@@ -252,8 +213,7 @@
 <div class="main">
 
   <!-- SIDEBAR -->
- <div class="sidebar" id="sidebar">
-  <button id="sidebarToggle" class="sidebar-toggle">☰</button>
+  <div class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-header-title">// PRESENTATION FILES</div>
     </div>
@@ -375,17 +335,6 @@ function updateUI() {
   document.getElementById('progressText').textContent = done.size + ' / ' + TOTAL;
 }
 
-
-
-
-const sidebar = document.getElementById('sidebar');
-const sidebarToggle = document.getElementById('sidebarToggle');
-
-sidebarToggle.addEventListener('click', () => {
-  sidebar.classList.toggle('collapsed');
-});
-
-
 function go(n) {
   if (n < 0 || n > TOTAL-1) return;
   done.add(cur);
@@ -394,11 +343,15 @@ function go(n) {
   updateUI();
   /* scroll sidebar item into view */
   document.getElementById('item-' + cur).scrollIntoView({ behavior:'smooth', block:'nearest' });
+  
 }
 
 /* init */
 document.getElementById('mainFrame').src = FILES[0].file;
 updateUI();
+
+
+
 </script>
 </body>
 </html>

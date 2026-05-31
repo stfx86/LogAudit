@@ -850,21 +850,9 @@ goTo(0);
 
 
 /* ── Parent bridge ── */
-/* ── Parent bridge ── */
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'ArrowRight' || e.key === ' ') {
-    if (cur >= TOTAL - 1) {
-      e.stopImmediatePropagation();
-      window.parent.postMessage({ type: 'atEnd' }, '*');
-    }
-  }
-  if (e.key === 'ArrowLeft') {
-    if (cur <= 0) {
-      e.stopImmediatePropagation();
-      window.parent.postMessage({ type: 'atStart' }, '*');
-    }
-  }
-}, true); /* true = capture phase, runs before the existing listener */
+
+
+
 
 
 
