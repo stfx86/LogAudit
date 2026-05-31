@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVE-2022-30333 — Exploit & Closing</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#020b10; --panel:#040f18; --border:#0d3a4a;
+    --cyan:#00d4ff; --red:#ff3c5a; --yellow:#ffd700;
+    --green:#00e68a;
+    --text:#b0cdd8; --dim:#4a6a7a;
+    --mono:'Share Tech Mono',monospace;
+    --display:'Orbitron',sans-serif;
+    --body:'Rajdhani',sans-serif;
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text); font-family:var(--body);
+    height:100vh; width:100vw; overflow:hidden;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);
+    pointer-events:none; z-index:9999;
+  }
+
+  .slide { position:absolute; inset:0; display:none; opacity:0; transition:opacity 0.4s; flex-direction:column; }
+  .slide.active { display:flex; }
+  .slide.visible { opacity:1; }
+
+  /* ── STEPBAR ── */
+  .stepbar { display:flex; align-items:center; gap:22px; padding:14px 40px; border-bottom:2px solid var(--border); background:rgba(0,212,255,0.03); flex-shrink:0; }
+  .step-num  { font-family:var(--display); font-size:20px; color:var(--dim); letter-spacing:3px; }
+  .step-name { font-family:var(--display); font-size:28px; color:var(--cyan); letter-spacing:1px; flex:1; }
+  .step-mitre { font-family:var(--mono); font-size:21px; color:#00e68a; border:1px solid rgba(0,230,138,0.3); padding:5px 14px; border-radius:2px; }
+  .step-badge { font-family:var(--mono); font-size:19px; padding:5px 14px; border-radius:2px; background:rgba(255,60,90,0.12); color:var(--red); border:1px solid rgba(255,60,90,0.3); }
+
+  /* ── NAV ── */
+  .slide-nav { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:200; }
+  .dot { width:10px; height:10px; border-radius:50%; background:var(--dim); cursor:pointer; transition:all 0.3s; }
+  .dot.active { background:var(--cyan); box-shadow:0 0 10px var(--cyan); }
+  .slide-counter { position:fixed; bottom:16px; left:28px; font-family:var(--mono); font-size:16px; color:var(--dim); z-index:200; letter-spacing:1px; }
+
+  /* ── CURSOR ── */
+  .cursor {
+    display:inline-block; width:13px; height:24px; background:var(--cyan);
+    animation:blink 1.1s step-end infinite; vertical-align:text-bottom; margin-left:2px;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ══════════════════════════════════════════
+     SLIDE 0 — CVE OVERVIEW (simple paragraph)
+  ══════════════════════════════════════════ */
+  .cve-body {
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:64px 120px;
+    background:radial-gradient(ellipse at 50% 40%, rgba(255,60,90,0.04) 0%, transparent 65%);
+  }
+  .cve-tag {
+    font-family:var(--mono); font-size:17px; color:var(--dim);
+    letter-spacing:4px; margin-bottom:24px;
+  }
+  .cve-headline {
+    font-family:var(--display); font-size:42px; color:var(--red);
+    letter-spacing:2px; text-align:center; margin-bottom:8px;
+    text-shadow:0 0 40px rgba(255,60,90,0.25);
+  }
+  .cve-subtitle {
+    font-family:var(--display); font-size:22px; color:var(--cyan);
+    letter-spacing:1px; text-align:center; margin-bottom:48px;
+  }
+  .cve-rule { width:80px; height:3px; background:var(--red); border-radius:2px; margin-bottom:48px; }
+  .cve-para {
+    font-family:var(--body); font-size:28px; font-weight:500;
+    color:var(--text); line-height:1.85; text-align:center;
+    max-width:860px;
+  }
+  .cve-para .hl-cyan  { color:var(--cyan); font-weight:700; }
+  .cve-para .hl-red   { color:var(--red);  font-weight:700; }
+  .cve-para .hl-green { color:var(--green);font-weight:700; }
+
+  /* shared term helpers used by slide 1 */
+  .term-bar {
+    padding:12px 22px; border-bottom:1px solid var(--border); background:rgba(0,0,0,0.5);
+    font-family:var(--mono); font-size:19px; color:var(--dim); letter-spacing:2px;
+    display:flex; align-items:center; gap:10px; flex-shrink:0;
+  }
+  .term-dot { width:13px; height:13px; border-radius:50%; }
+  .term-body-scroll { flex:1; overflow-y:auto; padding:24px 32px; font-family:var(--mono); font-size:22px; line-height:2; background:#010a12; }
+  .tp   { color:#ff6b8a; }
+  .tc   { color:#e8f4f8; }
+  .tg   { color:#00e68a; }
+  .ty   { color:#ffd700; }
+  .tdim { color:#4a6a7a; }
+  .tw   { color:#00d4ff; }
+
+  /* ══════════════════════════════════════════
+     SLIDE 1 — THANK YOU
+  ══════════════════════════════════════════ */
+  .ty-layout { flex:1; display:flex; overflow:hidden; }
+
+  /* Main thank-you center */
+  .ty-center {
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:48px; position:relative;
+    background:radial-gradient(ellipse at 50% 40%, rgba(0,212,255,0.06) 0%, transparent 65%);
+  }
+  .ty-glyph { font-family:var(--mono); font-size:18px; color:var(--dim); letter-spacing:4px; margin-bottom:28px; }
+  .ty-h1 { font-family:var(--display); font-size:80px; color:var(--cyan); text-align:center; line-height:1.1; letter-spacing:4px; text-shadow:0 0 60px rgba(0,212,255,0.35), 0 0 20px rgba(0,212,255,0.2); margin-bottom:10px; }
+  .ty-h2 { font-family:var(--display); font-size:28px; color:var(--yellow); text-align:center; letter-spacing:2px; margin-bottom:40px; }
+  .ty-divider { display:flex; align-items:center; gap:16px; width:100%; max-width:600px; margin-bottom:36px; }
+  .ty-line { flex:1; height:1px; background:var(--border); }
+  .ty-icon { font-family:var(--mono); font-size:18px; color:var(--dim); white-space:nowrap; letter-spacing:2px; }
+  .ty-names { display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:32px; }
+  .ty-name { font-family:var(--body); font-size:30px; font-weight:700; color:var(--text); letter-spacing:3px; }
+  .ty-sub { font-family:var(--mono); font-size:17px; color:var(--dim); text-align:center; letter-spacing:2px; margin-top:8px; }
+  .ty-topic { font-family:var(--mono); font-size:18px; color:rgba(0,212,255,0.5); text-align:center; margin-top:6px; letter-spacing:1px; }
+
+  /* Jamal side panel */
+  .ty-jamal {
+    width:550px; flex-shrink:0;
+    border-left:1px solid var(--border);
+    background:rgba(255,60,90,0.015);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .ty-jamal-header { padding:20px 28px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px; }
+  .ty-jamal-avatar { font-size:46px; }
+  .ty-jamal-name { font-family:var(--display); font-size:32px; color:var(--red); letter-spacing:2px; }
+  .ty-jamal-role { font-family:var(--mono); font-size:16px; color:var(--dim); margin-top:4px; }
+  .ty-jamal-term { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .ty-jamal-term .term-bar { background:rgba(0,0,0,0.4); }
+  .ty-jamal-term .term-body-scroll { font-size:23px; line-height:2.1; }
+</style>
+</head>
+<body>
+
+<!-- ════ SLIDE 0 — CVE OVERVIEW ════ -->
+<div class="slide" id="slide-0">
+  <div class="stepbar">
+    <span class="step-num">EXPLOIT</span>
+    <span class="step-name">CVE-2022-30333 — UnRAR Path Traversal via Metasploit</span>
+    <span class="step-mitre">CWE-22</span>
+    <span class="step-badge">CVSS 7.5 HIGH</span>
+  </div>
+
+  <div class="cve-body">
+    <div class="cve-tag"></div>
+    <div class="cve-headline">CVE-2022-30333</div>
+    <div class="cve-subtitle">UnRAR Path Traversal Attack</div>
+    <div class="cve-rule"></div>
+    <p class="cve-para">
+      For this demonstration, we exploited <span class="hl-red">CVE-2022-30333</span>, a vulnerability in the
+      <span class="hl-cyan">UnRAR</span> utility that allows an attacker to write files outside the intended
+      extraction directory. By crafting a malicious RAR archive and delivering it to a vulnerable target,
+      we were able to gain <span class="hl-red">unauthorized access</span> to the system.
+      The entire attack was carried out using the <span class="hl-green">Metasploit Framework</span>,
+      which provided a ready-made module to automate the exploitation process from generating the
+      payload to establishing a remote session on the victim machine.
+    </p>
+  </div>
+</div>
+
+
+<!-- ════ SLIDE 1 — THANK YOU ════ -->
+<div class="slide" id="slide-1">
+  <div class="stepbar">
+    <span class="step-num">FIN</span>
+    <span class="step-name">End of Presentation</span>
+    <span class="step-mitre">Q&amp;A OPEN</span>
+  </div>
+
+  <div class="ty-layout">
+
+    <!-- Center thank-you -->
+    <div class="ty-center">
+      <div class="ty-glyph"></div>
+      <div class="ty-h1">THANK<br>YOU</div>
+      <div class="ty-h2"></div>
+
+      <div class="ty-divider">
+        <div class="ty-line"></div>
+        <div class="ty-icon">PRESENTED BY</div>
+        <div class="ty-line"></div>
+      </div>
+
+      <div class="ty-names">
+        <div class="ty-name">ABDELKHALEK EL IDRISSI</div>
+        <div class="ty-name">EL MOSTAFA BENNASSER</div>
+        <div class="ty-name">ANAS TARYOUS</div>
+      </div>
+
+      <div class="ty-sub"></div>
+      <div class="ty-topic" style="margin-top:14px;"></div>
+    </div>
+
+    <!-- Jamal panel -->
+    <div class="ty-jamal">
+      <div class="ty-jamal-header">
+        <div class="ty-jamal-avatar">🕵️</div>
+        <div>
+          <div class="ty-jamal-name">JAMAL</div>
+          <div class="ty-jamal-role">// threat_actor :: external_attacker</div>
+        </div>
+      </div>
+      <div class="ty-jamal-term">
+        <div class="term-bar">
+          <div class="term-dot" style="background:#ff3c5a"></div>
+          <div class="term-dot" style="background:#ffd700"></div>
+          <div class="term-dot" style="background:#00e68a"></div>
+          <span style="margin-left:10px">JAMAL@arch-linux</span>
+        </div>
+        <div class="term-body-scroll" style="background:#010a12; flex:1; overflow-y:auto; padding:28px 28px; font-family:var(--mono);">
+          <div><span class="tp">jamal@arch:~# </span><span class="tc">echo "thank you drari!"</span></div>
+          <br>
+          <div><span class="tp">jamal@arch:~# </span><span class="tc">echo "it was a pleasure playing the attacker, hope you learned something new today 😄"</span></div>
+          
+          
+         
+          <span class="cursor"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════ NAV ════ -->
+<div class="slide-nav" id="nav"></div>
+<div class="slide-counter" id="counter">1 / 2</div>
+
+<script>
+  const TOTAL = 2;
+  let cur = 0;
+
+  function buildNav() {
+    const nav = document.getElementById('nav');
+    for (let i = 0; i < TOTAL; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === 0 ? ' active' : '');
+      d.onclick = () => goTo(i);
+      nav.appendChild(d);
+    }
+  }
+
+  function goTo(n) {
+    for (let i = 0; i < TOTAL; i++) {
+      const s = document.getElementById('slide-' + i);
+      if (!s) continue;
+      s.style.display = 'none';
+      s.classList.remove('active', 'visible');
+    }
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === n));
+    document.getElementById('counter').textContent = (n + 1) + ' / ' + TOTAL;
+    cur = n;
+    const sl = document.getElementById('slide-' + n);
+    if (!sl) return;
+    sl.style.display = 'flex';
+    sl.classList.add('active');
+    requestAnimationFrame(() => { sl.classList.add('visible'); });
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') goTo(Math.min(cur + 1, TOTAL - 1));
+    if (e.key === 'ArrowLeft') goTo(Math.max(cur - 1, 0));
+  });
+
+  buildNav();
+  goTo(0);
+</script>
+</body>
+</html>
