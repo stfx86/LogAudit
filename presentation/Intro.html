@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wazuh SIEM — CVE-2022-30333 Attack Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#020b10; --panel:#040f18; --border:#0d3a4a;
+    --cyan:#00d4ff; --red:#ff3c5a; --yellow:#ffd700;
+    --green:#00e68a;
+    --text:#b0cdd8; --dim:#4a6a7a;
+    --mono:'Share Tech Mono',monospace;
+    --display:'Orbitron',sans-serif;
+    --body:'Rajdhani',sans-serif;
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text); font-family:var(--body);
+    height:100vh; width:100vw; overflow:hidden;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);
+    pointer-events:none; z-index:9999;
+  }
+
+  .slide { position:absolute; inset:0; display:none; opacity:0; transition:opacity 0.4s; flex-direction:column; }
+  .slide.active { display:flex; }
+  .slide.visible { opacity:1; }
+
+  /* ── STEPBAR ── */
+  .stepbar { display:flex; align-items:center; gap:22px; padding:14px 40px; border-bottom:2px solid var(--border); background:rgba(0,212,255,0.03); flex-shrink:0; }
+  .step-num  { font-family:var(--display); font-size:20px; color:var(--dim); letter-spacing:3px; }
+  .step-name { font-family:var(--display); font-size:28px; color:var(--cyan); letter-spacing:1px; flex:1; }
+  .step-time  { font-family:var(--mono); font-size:24px; color:var(--yellow); }
+  .step-mitre { font-family:var(--mono); font-size:21px; color:#00e68a; border:1px solid rgba(0,230,138,0.3); padding:5px 14px; border-radius:2px; }
+
+  /* ── LOG PANELS ── */
+  .content { flex:1; display:flex; gap:0; overflow:hidden; }
+  .panel { display:flex; flex-direction:column; border-right:1px solid var(--border); background:var(--panel); overflow:hidden; }
+  .panel:last-child { border-right:none; }
+  .panel-header { display:flex; align-items:center; gap:10px; padding:14px 24px; border-bottom:1px solid var(--border); background:rgba(0,0,0,0.3); flex-shrink:0; }
+  .ph-dot   { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+  .ph-title { font-family:var(--display); font-size:20px; letter-spacing:2px; flex:1; }
+  .ph-badge { font-family:var(--mono); font-size:18px; padding:5px 14px; border-radius:2px; letter-spacing:1px; }
+  .badge-crit { background:rgba(255,60,90,0.12); color:var(--red); border:1px solid rgba(255,60,90,0.3); }
+  .badge-warn { background:rgba(255,215,0,0.08); color:var(--yellow); border:1px solid rgba(255,215,0,0.25); }
+
+  /* ── IMAGE CARDS ── */
+  .img-body { flex:1; display:flex; flex-direction:column; padding:20px; overflow-y:auto; gap:20px; }
+  .ss-card { border:1px solid var(--border); border-radius:3px; overflow:hidden; background:#010a12; opacity:0; transform:translateY(14px); transition:opacity 0.5s, transform 0.5s; }
+  .ss-card.shown { opacity:1; transform:translateY(0); }
+  .ss-img { width:100%; display:block; }
+
+  /* ── IMAGE DESCRIPTION ── */
+  .img-desc {
+    padding:18px 24px;
+    background:rgba(0,212,255,0.02);
+    border-top:1px dashed rgba(0,212,255,0.15);
+    font-family:var(--mono);
+    font-size:21px;
+    color:var(--dim);
+    min-height:80px;
+    display:flex;
+    align-items:center;
+  }
+  .img-desc-placeholder { color:rgba(74,106,122,0.5); letter-spacing:1px; }
+
+  /* ── NAVIGATION ── */
+  .slide-nav { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:200; }
+  .dot { width:10px; height:10px; border-radius:50%; background:var(--dim); cursor:pointer; transition:all 0.3s; }
+  .dot.active { background:var(--cyan); box-shadow:0 0 10px var(--cyan); }
+  .nav-hint { position:fixed; bottom:16px; right:28px; font-family:var(--mono); font-size:16px; color:var(--dim); z-index:200; letter-spacing:1px; }
+  .slide-counter { position:fixed; bottom:16px; left:28px; font-family:var(--mono); font-size:16px; color:var(--dim); z-index:200; letter-spacing:1px; }
+
+  /* ── TITLE SLIDE ── */
+  .title-slide-body {
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:48px; position:relative;
+    background:radial-gradient(ellipse at 50% 30%, rgba(0,212,255,0.05) 0%, transparent 65%);
+  }
+  .title-univ    { font-family:var(--mono); font-size:26px; color:var(--dim); letter-spacing:4px; text-transform:uppercase; margin-bottom:4px; }
+  .title-faculty { font-family:var(--mono); font-size:22px; color:var(--dim); letter-spacing:3px; margin-bottom:36px; }
+  .title-logo-row { display:flex; align-items:center; gap:28px; margin-bottom:32px; }
+  .title-logo-img {
+  width:140px;
+  height:140px;
+  object-fit:contain;
+  mix-blend-mode: screen;
+  filter:
+  contrast(1.1) brightness(1.1)
+  drop-shadow(0 0 24px rgba(0,212,255,0.9))
+  drop-shadow(0 0 12px rgba(0,100,255,0.6))
+  drop-shadow(0 0 4px rgba(0,230,255,1));
+}
+  .title-citech-label { text-align:left; }
+  .title-citech-label .master { font-family:var(--display); font-size:30px; color:var(--cyan); letter-spacing:3px; text-shadow:0 0 20px rgba(0,212,255,0.4);}
+  .title-citech-label .prog   { font-family:var(--mono); font-size:17px; color:#7ab8d8; margin-top:6px; letter-spacing:1px; max-width:520px; line-height:1.5; }
+  .title-sep { width:1px; height:70px; background:linear-gradient(to bottom, transparent, var(--cyan), transparent); }
+  .title-supervisor { font-family:var(--mono); font-size:19px; color:#00e68a; letter-spacing:2px; margin-top:6px; }
+  .title-supervisor span { color:var(--text); }
+  .title-h1 { font-family:var(--display); font-size:56px; color:var(--cyan); text-align:center; line-height:1.2; letter-spacing:2px; margin-bottom:16px; text-shadow:0 0 40px rgba(0,212,255,0.3); }
+  .title-h2 { font-family:var(--display); font-size:26px; color:var(--yellow); text-align:center; letter-spacing:1px; margin-bottom:44px; }
+  .title-divider { display:flex; align-items:center; gap:16px; width:100%; max-width:700px; margin-bottom:40px; }
+  .title-divider-line { flex:1; height:1px; background:var(--border); }
+  .title-divider-icon { font-family:var(--mono); font-size:20px; color:var(--dim); letter-spacing:2px; white-space:nowrap; }
+  .title-names { display:flex; flex-direction:column; align-items:center; gap:14px; margin-bottom:32px; }
+  .title-name { font-family:var(--body); font-size:34px; font-weight:700; color:var(--text); letter-spacing:3px; }
+  .title-year { font-family:var(--mono); font-size:22px; color:var(--dim); letter-spacing:3px; }
+
+  /* ── INTRO SLIDE ── */
+  .intro-slide-body { flex:1; display:flex; flex-direction:column; padding:52px 80px; overflow:hidden; }
+  .section-title     { font-family:var(--display); font-size:52px; color:var(--cyan); letter-spacing:2px; margin-bottom:10px; }
+  .section-underline { width:80px; height:4px; background:var(--cyan); border-radius:2px; margin-bottom:40px; }
+  .blank-area  { flex:1; border:1px dashed rgba(0,212,255,0.15); border-radius:4px; display:flex; align-items:center; justify-content:center; background:rgba(0,212,255,0.01); }
+  .blank-label { font-family:var(--mono); font-size:28px; color:var(--dim); letter-spacing:2px; }
+
+  /* ── JAMAL SLIDE ── */
+  .jamal-layout  { flex:1; display:flex; overflow:hidden; }
+  .jamal-profile {
+    width:480px; flex-shrink:0; padding:36px 32px;
+    border-right:1px solid var(--border);
+    display:flex; flex-direction:column; gap:24px;
+    background:rgba(255,60,90,0.02);
+  }
+  .jamal-avatar { width:120px; height:120px; border-radius:4px; background:rgba(255,60,90,0.08); border:2px solid rgba(255,60,90,0.4); display:flex; align-items:center; justify-content:center; font-size:64px; margin-bottom:4px; }
+  .jamal-name   { font-family:var(--display); font-size:48px; color:var(--red); letter-spacing:3px; }
+  .jamal-role   { font-family:var(--mono); font-size:22px; color:var(--dim); margin-top:6px; }
+  .jamal-tags   { display:flex; flex-wrap:wrap; gap:8px; }
+  .jtag { font-family:var(--mono); font-size:18px; padding:5px 13px; border-radius:2px; background:rgba(255,60,90,0.08); border:1px solid rgba(255,60,90,0.25); color:var(--red); }
+  .jamal-text     { font-family:var(--body); font-size:26px; color:var(--text); line-height:1.72; }
+  .jamal-text-sub { font-family:var(--body); font-size:22px; color:var(--dim); line-height:1.65; }
+
+  /* ── TERMINAL ── */
+  .jamal-terminal { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .term-bar {
+    padding:12px 22px; border-bottom:1px solid var(--border); background:rgba(0,0,0,0.5);
+    font-family:var(--mono); font-size:20px; color:var(--dim); letter-spacing:2px;
+    display:flex; align-items:center; gap:10px; flex-shrink:0;
+  }
+  .term-dot  { width:15px; height:15px; border-radius:50%; }
+  .term-body {
+    flex:1; padding:40px; overflow-y:auto;
+    font-family:var(--mono); font-size:26px; line-height:2;
+    background:#010a12;
+    display:flex; align-items:center;
+  }
+  .tp { color:#ff6b8a; }
+  .tc { color:#e8f4f8; }
+  .cursor {
+    display:inline-block; width:14px; height:26px; background:var(--cyan);
+    animation:blink 1.1s step-end infinite; vertical-align:text-bottom;
+  }
+  @keyframes blink { 0%, 100% { opacity:1; } 50% { opacity:0; } }
+  
+  .logo-wrap {
+  width:140px; height:140px; flex-shrink:0;
+  isolation:isolate;
+}
+.logo-wrap img {
+  width:100%; height:100%; object-fit:contain;
+  mix-blend-mode: multiply;
+  filter:
+    drop-shadow(0 0 22px rgba(0,212,255,0.9))
+    drop-shadow(0 0 10px rgba(0,150,255,0.7));
+}
+</style>
+</head>
+<body>
+
+<!-- ════ SLIDE 0 — TITLE ════ -->
+<div class="slide" id="slide-0">
+  <div class="title-slide-body">
+    <div class="title-univ">University Mohammed V</div>
+    <div class="title-faculty">Faculty of Science</div>
+
+    <div class="title-logo-row">
+      <img class="title-logo-img" src="../sketching/logo_transparent.png" alt="CITEch logo">
+      <div class="title-sep"></div>
+      <div class="title-citech-label">
+        <div class="master">MASTER CITEch</div>
+        <div class="prog">Cybersecurity Intelligent and Emergent Technologies</div>
+      </div>
+    </div>
+
+    <div class="title-h1">WAZUH SIEM<br>Intrusion Detection &amp; Log Analysis</div>
+    <div class="title-h2">CVE-2022-30333 — UnRAR Path Traversal Attack Case Study</div>
+
+    <div class="title-divider">
+      <div class="title-divider-line"></div>
+      <div class="title-divider-icon">PRESENTED BY</div>
+      <div class="title-divider-line"></div>
+    </div>
+
+    <div class="title-names">
+      <div class="title-name">ABDELKHALEK EL IDRISSI</div>
+      <div class="title-name">EL MOSTAFA BENNASSER</div>
+      <div class="title-name">ANAS TARYOUS</div>
+    </div>
+
+    <div class="title-year">ACADEMIC YEAR 2025 – 2026</div>
+    <div class="title-supervisor" style="margin-top:18px;">SUPERVISED BY &nbsp;<span>Prof. OUSSAMA SBAI</span></div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+<!-- ════ SLIDE 1 — INTRODUCTION ════ -->
+<div class="slide" id="slide-1">
+  <div class="intro-slide-body">
+    <div class="section-title">Introduction &amp; Context</div>
+    <div class="section-underline"></div>
+    <div style="flex:1; min-height:0; overflow-y:auto; border:1px dashed rgba(0,212,255,0.15); border-radius:4px; background:rgba(0,212,255,0.01);">
+      <img src="../sketching/lab_architecture_v2.svg" alt="lab architecture"
+           onclick="openLightbox(this.src)"
+           style="width:100%; display:block; cursor:zoom-in;">
+    </div>
+  </div>
+</div>
+
+<!-- ════ LIGHTBOX OVERLAY ════ -->
+<div id="lightbox" onclick="closeLightbox()"
+     style="display:none; position:fixed; inset:0; z-index:9998;
+            background:rgba(2,11,16,0.95); cursor:zoom-out;
+            align-items:center; justify-content:center;">
+  <img id="lightbox-img" src="" alt=""
+       style="max-width:95vw; max-height:95vh; object-fit:contain;
+              border:1px solid rgba(0,212,255,0.2); border-radius:4px;">
+  <div style="position:absolute; top:20px; right:28px;
+              font-family:var(--mono); font-size:22px;
+              color:var(--cyan); letter-spacing:2px;"></div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ════ SLIDE 2 — MEET JAMAL ════ -->
+<div class="slide" id="slide-2">
+  <div class="stepbar">
+    <span class="step-num">PROLOGUE</span>
+    <span class="step-name">The Attacker — Introducing Jamal</span>
+  </div>
+  <div class="jamal-layout">
+    <div class="jamal-profile">
+      <div>
+        <div class="jamal-avatar">&#x1F575;&#xFE0F;</div>
+        <div class="jamal-name">JAMAL</div>
+        <div class="jamal-role">// threat_actor :: external_attacker</div>
+      </div>
+      <div class="jamal-tags">
+        <span class="jtag">PATH TRAVERSAL</span>
+        <span class="jtag">ROOT ESCALATION</span>
+        <span class="jtag">BACKDOOR INSTALLATION</span>
+        
+      </div>
+      <div class="jamal-text">
+        Jamal is the attacker in our scenario. Throughout this presentation,
+        he will demonstrate each step of the intrusion, live at his terminal,
+        so you can understand exactly what a real attacker does.
+      </div>
+      <div class="jamal-text-sub">
+        Every command Jamal executes will be shown alongside the logs captured
+        by Wazuh SIEM, bridging the attacker's perspective with the
+        defender's detection view.
+      </div>
+    </div>
+    <div class="jamal-terminal">
+      <div class="term-bar">
+        <div class="term-dot" style="background:#ff3c5a"></div>
+        <div class="term-dot" style="background:#ffd700"></div>
+        <div class="term-dot" style="background:#00e68a"></div>
+        <span style="margin-left:10px">JAMAL@arch-linux — ATTACKER MACHINE</span>
+      </div>
+      <div class="term-body">
+        <div>
+          <span class="tp">jamal@arch:~# </span>
+          <span class="tc">echo "hello drari i'm Jamal, and today i will play the role of the attacker haha (for learning purpose only &#x1F605;)"</span>
+          <span class="cursor"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SLIDE 3 — PLACEHOLDER ════ -->
+
+
+<!-- ════ NAV ════ -->
+<div class="slide-nav" id="nav"></div>
+<div class="slide-counter" id="counter">1 / 4</div>
+<div class="nav-hint"></div>
+
+<script>
+
+
+  const TOTAL = 3;
+  let cur = 0;
+
+  function openLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').style.display = 'flex';
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').style.display = 'none';
+  }
+
+  function buildNav() {
+    const nav = document.getElementById('nav');
+    for (let i = 0; i < TOTAL; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === 0 ? ' active' : '');
+      d.onclick = () => goTo(i);
+      nav.appendChild(d);
+    }
+  }
+
+  function goTo(n) {
+    for (let i = 0; i < TOTAL; i++) {
+      const s = document.getElementById('slide-' + i);
+      if (!s) continue;
+      s.style.display = 'none';
+      s.classList.remove('active', 'visible');
+      s.querySelectorAll('.ss-card').forEach(el => el.classList.remove('shown'));
+    }
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === n));
+    document.getElementById('counter').textContent = (n + 1) + ' / ' + TOTAL;
+    cur = n;
+    const sl = document.getElementById('slide-' + n);
+    if (!sl) return;
+    sl.style.display = 'flex';
+    sl.classList.add('active');
+    requestAnimationFrame(() => {
+      sl.classList.add('visible');
+      setTimeout(() => runAnim(n), 200);
+    });
+  }
+
+  function runAnim(n) {
+    if (n === 3) {
+      ['sc0', 'sc1'].forEach((id, i) =>
+        setTimeout(() => {
+          const e = document.getElementById(id);
+          if (e) e.classList.add('shown');
+        }, 150 + i * 320)
+      );
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    const lightboxOpen = document.getElementById('lightbox').style.display === 'flex';
+    if (e.key === 'Escape') { closeLightbox(); return; }
+    if (lightboxOpen) return;
+    if (e.key === 'ArrowRight' || e.key === ' ') goTo(Math.min(cur + 1, TOTAL - 1));
+    if (e.key === 'ArrowLeft') goTo(Math.max(cur - 1, 0));
+  });
+
+  buildNav();
+  goTo(0);
+</script>
+
+</body>
+</html>
