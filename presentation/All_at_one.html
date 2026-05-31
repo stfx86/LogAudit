@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presentation Launcher</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#020b10; --panel:#040f18; --border:#0d3a4a;
+    --cyan:#00d4ff; --red:#ff3c5a; --yellow:#ffd700;
+    --green:#00e68a; --text:#b0cdd8; --dim:#4a6a7a;
+    --mono:'Share Tech Mono',monospace;
+    --display:'Orbitron',sans-serif;
+    --body:'Rajdhani',sans-serif;
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text);
+    font-family:var(--body);
+    height:100vh; width:100vw; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);
+    pointer-events:none; z-index:9999;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 32px; height:52px; flex-shrink:0;
+    border-bottom:1px solid var(--border);
+    background:rgba(4,15,24,0.98);
+  }
+  .topbar-logo { font-family:var(--display); font-size:13px; color:var(--cyan); letter-spacing:3px; }
+  .topbar-title { font-family:var(--mono); font-size:13px; color:var(--dim); letter-spacing:2px; }
+  .topbar-badge {
+    font-family:var(--mono); font-size:11px; color:var(--red);
+    border:1px solid rgba(255,60,90,0.35); padding:3px 10px; border-radius:2px;
+    background:rgba(255,60,90,0.07);
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    flex:1; display:flex; overflow:hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width:320px; flex-shrink:0;
+    border-right:1px solid var(--border);
+    background:rgba(4,15,24,0.6);
+    display:flex; flex-direction:column;
+    overflow:hidden;
+  }
+  .sidebar-header {
+    padding:20px 24px 14px;
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .sidebar-header-title {
+    font-family:var(--display); font-size:12px;
+    color:var(--dim); letter-spacing:3px;
+  }
+  .sidebar-list {
+    flex:1; overflow-y:auto; padding:12px 0;
+  }
+
+  .file-item {
+    display:flex; align-items:center; gap:14px;
+    padding:14px 24px; cursor:pointer;
+    border-left:3px solid transparent;
+    transition:all 0.2s; position:relative;
+  }
+  .file-item:hover { background:rgba(0,212,255,0.04); border-left-color:var(--dim); }
+  .file-item.active {
+    background:rgba(0,212,255,0.07);
+    border-left-color:var(--cyan);
+  }
+  .file-item.done { border-left-color:var(--green); }
+  .file-item.done .item-icon { color:var(--green); }
+
+  .item-index {
+    font-family:var(--mono); font-size:11px; color:var(--dim);
+    min-width:20px; text-align:right;
+  }
+  .item-icon { font-size:18px; flex-shrink:0; }
+  .item-info { flex:1; min-width:0; }
+  .item-name {
+    font-family:var(--body); font-size:18px; font-weight:700;
+    color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .file-item.active .item-name { color:var(--cyan); }
+  .item-file {
+    font-family:var(--mono); font-size:11px; color:var(--dim);
+    margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .item-status {
+    font-family:var(--mono); font-size:10px;
+    padding:2px 7px; border-radius:2px; flex-shrink:0;
+  }
+  .status-active  { background:rgba(0,212,255,0.1);  color:var(--cyan);  border:1px solid rgba(0,212,255,0.3); }
+  .status-done    { background:rgba(0,230,138,0.08); color:var(--green); border:1px solid rgba(0,230,138,0.3); }
+  .status-pending { background:rgba(74,106,122,0.1); color:var(--dim);   border:1px solid rgba(74,106,122,0.2); }
+
+  /* progress bar */
+  .progress-wrap { padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0; }
+  .progress-label {
+    display:flex; justify-content:space-between;
+    font-family:var(--mono); font-size:11px; color:var(--dim);
+    margin-bottom:8px;
+  }
+  .progress-track {
+    height:3px; background:rgba(74,106,122,0.3); border-radius:2px; overflow:hidden;
+  }
+  .progress-fill {
+    height:100%; background:var(--cyan);
+    box-shadow:0 0 8px rgba(0,212,255,0.5);
+    border-radius:2px; transition:width 0.4s ease;
+  }
+
+  /* ── IFRAME AREA ── */
+  .viewer { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+
+  .viewer-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 28px; height:48px; flex-shrink:0;
+    border-bottom:1px solid var(--border);
+    background:rgba(4,15,24,0.8);
+  }
+  .viewer-title { font-family:var(--display); font-size:14px; color:var(--cyan); letter-spacing:1px; }
+  .viewer-hint  { font-family:var(--mono); font-size:11px; color:var(--dim); }
+
+  iframe {
+    flex:1; border:none; width:100%; height:100%;
+    display:block;
+  }
+
+  /* ── BOTTOM NAV BAR ── */
+  .navbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 28px; height:52px; flex-shrink:0;
+    border-top:1px solid var(--border);
+    background:rgba(4,15,24,0.95);
+    gap:16px;
+  }
+
+  .nav-btn {
+    font-family:var(--display); font-size:12px; letter-spacing:2px;
+    padding:8px 24px; border-radius:2px; cursor:pointer;
+    transition:all 0.2s; display:flex; align-items:center; gap:8px;
+    border:1px solid;
+  }
+  .nav-btn:disabled { opacity:0.25; cursor:not-allowed; }
+
+  .btn-prev {
+    color:var(--dim); border-color:rgba(74,106,122,0.4);
+    background:rgba(74,106,122,0.06);
+  }
+  .btn-prev:hover:not(:disabled) {
+    color:var(--text); border-color:var(--dim);
+    background:rgba(74,106,122,0.12);
+  }
+
+  .btn-next {
+    color:var(--cyan); border-color:rgba(0,212,255,0.4);
+    background:rgba(0,212,255,0.06);
+  }
+  .btn-next:hover:not(:disabled) {
+    color:#fff; border-color:var(--cyan);
+    background:rgba(0,212,255,0.12);
+    box-shadow:0 0 16px rgba(0,212,255,0.2);
+  }
+  .btn-next.final {
+    color:var(--green); border-color:rgba(0,230,138,0.4);
+    background:rgba(0,230,138,0.06);
+  }
+  .btn-next.final:hover:not(:disabled) {
+    border-color:var(--green);
+    box-shadow:0 0 16px rgba(0,230,138,0.2);
+  }
+
+  .navbar-center {
+    flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .nav-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--dim); cursor:pointer; transition:all 0.25s;
+    border:1px solid transparent;
+  }
+  .nav-dot.active {
+    background:var(--cyan); box-shadow:0 0 8px var(--cyan);
+    border-color:rgba(0,212,255,0.4);
+  }
+  .nav-dot.done {
+    background:var(--green); box-shadow:0 0 6px rgba(0,230,138,0.4);
+  }
+  .nav-dot:hover:not(.active) { background:#4a8a9a; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">MASTER CITEch</div>
+  <div class="topbar-title">CVE-2022-30333 · WAZUH SIEM · Presentation</div>
+  <div class="topbar-badge">TLP:RED</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-header-title">// PRESENTATION FILES</div>
+    </div>
+    <div class="sidebar-list" id="sidebarList"></div>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>PROGRESS</span>
+        <span id="progressText">0 / 5</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEWER -->
+  <div class="viewer">
+    <div class="viewer-header">
+      <div class="viewer-title" id="viewerTitle">—</div>
+      <div class="viewer-hint"></div>
+    </div>
+    <iframe id="mainFrame" src=""></iframe>
+    <div class="navbar">
+      <button class="nav-btn btn-prev" id="btnPrev" onclick="go(cur-1)" disabled>&#8592; PREV</button>
+      <div class="navbar-center" id="navDots"></div>
+      <button class="nav-btn btn-next" id="btnNext" onclick="go(cur+1)">NEXT &#8594;</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const FILES = [
+  { name: "Introduction",         file: "Intro.html",               icon: "" },
+  { name: "PHASE1",         file: "adkhl9.html",              icon: "" },
+  { name: "PHASE2",   file: "anas_with_trminal.html",   icon: "" },
+  { name: "PHASE3",      file: "stf_with_terminal.html",   icon: "" },
+  { name: "THE END",     file: "closing_ceremony.html",    icon: "" },
+];
+
+const TOTAL = FILES.length;
+let cur = 0;
+const done = new Set();
+
+/* ── build sidebar ── */
+const sidebarList = document.getElementById('sidebarList');
+FILES.forEach((f, i) => {
+  const el = document.createElement('div');
+  el.className = 'file-item' + (i === 0 ? ' active' : '');
+  el.id = 'item-' + i;
+  el.onclick = () => go(i);
+  el.innerHTML = `
+    <span class="item-index">${String(i+1).padStart(2,'0')}</span>
+    <span class="item-icon">${f.icon}</span>
+    <div class="item-info">
+      <div class="item-name">${f.name}</div>
+      <div class="item-file">${f.file}</div>
+    </div>
+    <span class="item-status ${i===0?'status-active':'status-pending'}" id="status-${i}">
+      ${i===0?'ACTIVE':'PENDING'}
+    </span>`;
+  sidebarList.appendChild(el);
+});
+
+/* ── build nav dots ── */
+const navDots = document.getElementById('navDots');
+FILES.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'nav-dot' + (i===0?' active':'');
+  d.id = 'dot-' + i;
+  d.title = FILES[i].name;
+  d.onclick = () => go(i);
+  navDots.appendChild(d);
+});
+
+function updateUI() {
+  /* sidebar items */
+  FILES.forEach((_, i) => {
+    const item   = document.getElementById('item-' + i);
+    const status = document.getElementById('status-' + i);
+    item.className = 'file-item' + (i===cur?' active':'') + (done.has(i)?' done':'');
+    if (i === cur) {
+      status.className = 'item-status status-active';
+      status.textContent = 'ACTIVE';
+    } else if (done.has(i)) {
+      status.className = 'item-status status-done';
+      status.textContent = 'DONE';
+    } else {
+      status.className = 'item-status status-pending';
+      status.textContent = 'PENDING';
+    }
+  });
+
+  /* dots */
+  FILES.forEach((_, i) => {
+    const d = document.getElementById('dot-' + i);
+    d.className = 'nav-dot' + (i===cur?' active':'') + (!d.classList.contains('active')&&done.has(i)?' done':'');
+    if (i === cur) d.className = 'nav-dot active';
+    else if (done.has(i)) d.className = 'nav-dot done';
+    else d.className = 'nav-dot';
+  });
+
+  /* viewer title */
+  document.getElementById('viewerTitle').textContent =
+    FILES[cur].icon + '  ' + FILES[cur].name;
+
+  /* prev/next buttons */
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  btnPrev.disabled = cur === 0;
+  btnNext.disabled = false;
+  btnNext.className = 'nav-btn btn-next' + (cur === TOTAL-1 ? ' final' : '');
+  btnNext.innerHTML = cur === TOTAL-1 ? 'FINISH ✓' : 'NEXT &#8594;';
+  if (cur === TOTAL-1) btnNext.disabled = false;
+
+  /* progress */
+  const pct = Math.round((done.size / TOTAL) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = done.size + ' / ' + TOTAL;
+}
+
+function go(n) {
+  if (n < 0 || n > TOTAL-1) return;
+  done.add(cur);
+  cur = n;
+  document.getElementById('mainFrame').src = FILES[cur].file;
+  updateUI();
+  /* scroll sidebar item into view */
+  document.getElementById('item-' + cur).scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+/* init */
+document.getElementById('mainFrame').src = FILES[0].file;
+updateUI();
+</script>
+</body>
+</html>
+
